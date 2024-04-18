@@ -1,1 +1,3 @@
-# msc-thesis-code
+# msc
+
+Scripts for testing AP devices

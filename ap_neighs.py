@@ -76,3 +76,5 @@ if __name__ == '__main__':
     else:
         print('[!] Unknown type specified:', type)
         exit(1)
+
+    # TODO: reading /tmp/dhcp.leases

@@ -43,8 +43,9 @@ def run_arp_scan(dev):
             break
 
     macs = lines[start_index+1:end_index-1] if start_index != -1 and end_index != -1 else []
-    for m in macs:
-        print(m)
+    for i,m in enumerate(macs):
+        row = m.split('\t')
+        print(f'{i+1})\t{row[0]}\t{row[1]}')
 
     return len(macs)
 

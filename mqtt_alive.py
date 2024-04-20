@@ -21,7 +21,7 @@ def on_message(client, userdata, message):
     with lock:
         if not client_id == 'iotempower':
             active_clients[client_id] = time.time()
-            dead_clients.pop(key)
+            dead_clients.pop(client_id)
 
 
 def prune_active_clients():

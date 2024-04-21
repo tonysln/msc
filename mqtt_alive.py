@@ -77,7 +77,7 @@ def prune_active_clients():
         time.sleep(10)
         current_time = time.time()
         with lock:
-            for k, v in active_clients.items():
+            for k, v in active_clients.copy().items():
                 if (current_time - v) > 15:
                     dead_clients[k] = current_time
                     del active_clients[k]
@@ -86,7 +86,7 @@ def prune_active_clients():
                 
         os.system('clear')
         print(f"Active clients: {len(active_clients)}")
-        for k in active_clients.keys():
+        for k in active_clients.copy().keys():
             if k in lookup.keys():
                 print(f'{k}:\t{lookup[k][0]}\t{lookup[k][1]}')
             else:
@@ -95,7 +95,7 @@ def prune_active_clients():
         print('\n')
 
         print(f'Dead clients: {len(dead_clients)}')
-        for k in dead_clients.keys():
+        for k in dead_clients.copy().keys():
             print(k)
 
 

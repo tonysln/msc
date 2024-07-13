@@ -5,6 +5,14 @@
 # but more generally a separate file (csv perhaps?)
 # for the supported chips DB
 
+filter_msg() {
+  # Arg $1 - Provided msg
+
+  local filter_str="wifi|wireless|802.11|wlan|ath|broadcom|intel|realtek|qualcomm|mediatek|brcm|bcm|b43|mt76|iwlwifi|rtl"
+  local output=$(echo $1 | grep -i -E $filter_str)
+  echo output
+}
+
 check_lshw() {
   local output=$(sudo lshw -C network)
   # Find "Wireless interface" and collect 

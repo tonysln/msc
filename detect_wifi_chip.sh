@@ -1,46 +1,53 @@
-#!/bin/sh
+#!/bin/bash
 
 
-# TODO something along the lines of declare -A newmap,
-# but more generally a separate file (csv perhaps?)
-# for the supported chips DB
+# An attempt to detect any relevant Wi-Fi chip/driver identifiers 
+# from the output of Linux system info tools: dmesg, lsusb, lspci, lshw.
+# Outputs a single string with any relevant bits combined together.
 
 filter_msg() {
   # Arg $1 - Provided msg
 
-  local filter_str="wifi|wireless|802.11|wlan|ath|broadcom|intel|realtek|qualcomm|mediatek|brcm|bcm|b43|mt76|iwlwifi|rtl"
-  local output=$(echo $1 | grep -i -E $filter_str)
-  echo output
+  # Common driver identifiers that we are interested in
+  local filter_str="ath9k|ath10k|ath11k|ath12k|broadcom|realtek|intel|mediatek|brcm|bcm|b43|mt76|iwlwifi|rtl|brcmfmac|brcmsmac"
+  
+  # Filter the given message for any of the keywords,
+  # save the ones present and discard duplicates
+  echo $1 | grep -iEo $filter_str | sort -u
 }
 
-check_lshw() {
-  local output=$(sudo lshw -C network)
-  # Find "Wireless interface" and collect 
-  # product, vendor, bus info, logical name, 
-  # serial, capabilities and configuration.
-  # Might have multiple
-}
 
-check_lspci() {
-  local output=$(sudo lspci)
-  # Lookup from known/supported chips/vendors
-}
+# Kernel logs
+dmesg=$(filter_msg "$(sudo dmesg)")
 
-check_lsusb() {
-  local output=$(sudo lsusb)
-  # Lookup from known/supported chips/vendors
-  # from connected USB devices
-}
+# Gather status and capabilities,
+# join with lshw "logical name"
+#filter_msg "$(sudo iwconfig)"
 
-check_iwconfig() {
-  local output=$(sudo iwconfig)
-  # Gather status and capabilities,
-  # join with lshw "logical name"
-}
+# Lookup from known/supported chips/vendors
+# from connected USB devices
+usb=$(filter_msg "$(sudo lsusb)")
 
-check_dmesg() {
-  local output=$(sudo dmesg)
-  # Can get the richest output, but need to throw
-  # everything at it first from list of supported
-  # chips and models
-}
+# Lookup from known/supported chips/vendors
+pci=$(filter_msg "$(sudo lspci)")
+
+# Find "Wireless interface" and collect 
+# product, vendor, bus info, logical name, 
+# serial, capabilities and configuration.
+lshw_raw=$(sudo lshw -html -C network)
+lshw=$(filter_msg "$lshw_raw")
+
+# Parse lshw's HTML output separately
+parsed_output=$(echo $lshw_raw | xmllint --html --xpath "
+  //div[contains(@class, 'indented') and 
+  div/table[@summary='attributes of network']/tbody/tr[td='Wireless interface']]/
+  div/table[@summary='attributes of network']/tbody/tr/td[@class='second']
+" - 2>/dev/null)
+
+# Extract the initial 6 fields, interested in the first three lines mostly
+awk_output=$(echo "$parsed_output" | awk 'BEGIN { RS="</td>"; FS="<td class=\"second\">"; } NF>1 { print $2 } NR==6 { exit }')
+
+
+# Concatenate all outputs
+combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw" | sort | uniq)
+echo $combined

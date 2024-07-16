@@ -9,9 +9,76 @@ from textual.widgets import Button, Header, Footer, Static, OptionList
 from textual.widgets.option_list import Option, Separator
 from textual.reactive import reactive
 from textual.message import Message
+from textual.screen import Screen
 from textual import events
 import subprocess
 import sys
+
+
+
+class ConnectedClients(Screen):
+    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("""
+            # Connected Clients
+            """)
+
+        # TODO run MQTT part and arp-scan separately
+
+        yield Footer()
+
+
+class LocalConfiguration(Screen):
+    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("""
+            # Configure Access Point
+            """)
+        yield Footer()
+
+
+class OpenWRTConfiguration(Screen):
+    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("""
+            # Configure OpenWRT Router
+            """)
+        yield Footer()
+
+
+class APSettings(Screen):
+    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("""
+            # Access Point Settings
+            """)
+
+        # TODO first detect if hostapd or nm,
+        # underlying iwd or wpa_supplicant etc
+
+        yield Footer()
+
+
+class WiFiChipInfo(Screen):
+    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static("""
+            # Wi-Fi Chip Information
+            """)
+
+        # TODO additional lookup for driver info, probably through modprobe
+
+        yield Footer()
 
 
 
@@ -47,7 +114,13 @@ class APConfigurator(App):
         
 
     def on_mount(self) -> None:
+        self.install_screen(ConnectedClients(), name="concli")
+        self.install_screen(LocalConfiguration(), name="localconf")
+        self.install_screen(OpenWRTConfiguration(), name="wrtconf")
+        self.install_screen(APSettings(), name="apsettings")
+        self.install_screen(WiFiChipInfo(), name="wifichipinfo")
         asyncio.create_task(self.update_detected_chip())
+        # TODO IoTempower environment check
 
 
     def confirm_chip(self, detected) -> str:
@@ -73,15 +146,15 @@ class APConfigurator(App):
 
     async def handle_option(self, option_id: str) -> None:
         if option_id == "cap":
-            self.show_message("You selected Option 1")
+            self.push_screen('localconf')
         elif option_id == "cor":
-            self.show_message("You selected Option 2")
+            self.push_screen('wrtconf')
         elif option_id == "vcc":
-            self.show_message("You selected Option 3")
+            self.push_screen('concli')
         elif option_id == "vas":
-            self.show_message("You selected Option 4")
+            self.push_screen('apsettings')
         elif option_id == "vci":
-            self.show_message("You selected Option 5")
+            self.push_screen('wifichipinfo')
         elif option_id == "vq":
             self.action_quit()
 

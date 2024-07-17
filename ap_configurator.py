@@ -41,7 +41,7 @@ class ConnectedClients(Screen):
         out = run_arp_scan(dev) # TODO async after opening screen
 
         yield Static(f"""
-            {out}
+            Scan result: {out}
             """)
 
         yield Footer()
@@ -57,6 +57,20 @@ class LocalConfiguration(Screen):
         yield Header()
         yield Static("""
             # Configure Access Point
+
+            - Backend: hostapd or NetworkManager
+            - SSID/network name: Input
+            - Password: Input
+            - MAC?
+            - ??
+
+            [Configure]
+
+            Waiting for completion ... 
+
+            Might require a restart or modprobe ...
+
+            [Test Connection]
             """)
         yield Footer()
 
@@ -68,6 +82,29 @@ class OpenWRTConfiguration(Screen):
         yield Header()
         yield Static("""
             # Configure OpenWRT Router
+
+            Make sure your router has the following requirements met: ...
+            ...
+
+            Step 1:
+
+            - SSID/name?: Input
+            - Password: Input
+            - Version/something ...
+
+
+            Step 2:
+
+            - Upload firmware from here ...
+            - and/or enable SSH or something
+
+            [Connect]
+
+            Wait for completion... uploading settings ... updating ... 
+
+            Restarting ...
+
+            [Test Connection]
             """)
         yield Footer()
 
@@ -119,6 +156,7 @@ class APConfigurator(App):
             """)
             yield Static("", id="detected-chip")
             yield Static("", id="selected-option")
+            yield Static("", id="softap-status")
             yield OptionList(
                 Option("Configure Access Point", id="cap"),
                 Option("Configure OpenWRT Router", id="cor"),
@@ -130,7 +168,6 @@ class APConfigurator(App):
                 Option("Quit", id="vq"),
                 id="menu"
             )
-        yield Static("", id="softap-status")
         yield Footer()
         
 
@@ -141,6 +178,7 @@ class APConfigurator(App):
         self.install_screen(APSettings(), name="apsettings")
         self.install_screen(WiFiChipInfo(), name="wifichipinfo")
         asyncio.create_task(self.update_detected_chip())
+        asyncio.create_task(self.check_iotempower())
 
 
     def confirm_chip(self, detected) -> str:
@@ -216,14 +254,12 @@ class APConfigurator(App):
 
         if stdout and (chip := self.confirm_chip(stdout.decode())):
             WIFI_CHIP = chip
-            result = '\t[+] Your hardware: ' + chip + ': ' + plfrm
+            result = '\t[+] Your Wi-Fi chip: ' + chip + '\n\t    System: ' + plfrm
         else:
-            result = '\t[!] Unable to detect your Wi-Fi chip. System: ' + plfrm
+            result = '\t[!] Unable to detect your Wi-Fi chip.\n\t    System: ' + plfrm
 
         # softap_detected = await self.detect_softap()
         # self.query_one("#softap-status", Static).update(softap_detected)
-
-        self.check_iotempower()
 
         self.query_one("#detected-chip", Static).update(result)
 
@@ -242,12 +278,11 @@ class APConfigurator(App):
         )
         stdout, stderr = await proc.communicate()
 
-        if stdout:
-            IOTEMPOWER = "IoTempower activated!"
-        else:
-            IOTEMPOWER = "IoTempower not activated!"
+        IOTEMPOWER = stdout.decode() == 'yes'
 
-        self.query_one("#softap-status", Static).update(str(IOTEMPOWER))
+        status = "\n\t[+] IoTempower activated!" if IOTEMPOWER else "\n\t[-] IoTempower is not activated!"
+
+        self.query_one("#softap-status", Static).update(status)
 
 
     def activate_brcm_minimal(self) -> None:

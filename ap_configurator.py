@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 
+from scripts.mqtt_alive import *
+
 import asyncio
 from textual import log
 from textual.app import App, ComposeResult
@@ -11,9 +13,16 @@ from textual.reactive import reactive
 from textual.message import Message
 from textual.screen import Screen
 from textual import events
+import platform
 import subprocess
 import sys
 
+
+
+WIFI_CHIP = ''
+SYSTEM = ''
+SOFTAP = ''
+IOTEMPOWER = ''
 
 
 class ConnectedClients(Screen):
@@ -27,7 +36,18 @@ class ConnectedClients(Screen):
 
         # TODO run MQTT part and arp-scan separately
 
+        # TODO iwconfig -> acquire device name (wlan0)
+        dev = 'wlan0'
+        out = run_arp_scan(dev) # TODO async after opening screen
+
+        yield Static(f"""
+            {out}
+            """)
+
         yield Footer()
+
+    def on_mount(self):
+        pass
 
 
 class LocalConfiguration(Screen):
@@ -110,6 +130,7 @@ class APConfigurator(App):
                 Option("Quit", id="vq"),
                 id="menu"
             )
+        yield Static("", id="softap-status")
         yield Footer()
         
 
@@ -120,7 +141,6 @@ class APConfigurator(App):
         self.install_screen(APSettings(), name="apsettings")
         self.install_screen(WiFiChipInfo(), name="wifichipinfo")
         asyncio.create_task(self.update_detected_chip())
-        # TODO IoTempower environment check
 
 
     def confirm_chip(self, detected) -> str:
@@ -159,26 +179,64 @@ class APConfigurator(App):
             self.action_quit()
 
 
+    async def detect_softap(self) -> str:
+        res1 = subprocess.run(['cat', '/etc/hostapd'], capture_output=True, text=True)
+        res1 = res1.stdout
+
+        res2 = subprocess.run(['grep', '-i', 'renderer', '/etc/netplan/*.yaml'], capture_output=True, text=True)
+        res2 = res2.stdout
+
+        res3 = subprocess.run(['systemctl', 'status', 'NetworkManager'], capture_output=True, text=True)
+        res3 = res3.stdout
+
+        res4 = subprocess.run(['hostapd'], capture_output=True, text=True)
+        res4 = res4.stdout
+
+        res5 = subprocess.run(['nmcli'], capture_output=True, text=True)
+        res5 = res5.stdout
+
+        out = ', '.join([res1, res2, res3, res4, res5])
+        return out
+
+
     async def update_detected_chip(self) -> None:
+        global SYSTEM, SOFTAP, WIFI_CHIP
+
         self.query_one("#detected-chip", Static).update('\t[.] Running chip detection...')
 
         proc = await asyncio.create_subprocess_shell(
-            "sudo bash detect_wifi_chip.sh",
+            "sudo bash ./scripts/detect_wifi_chip.sh",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
         stdout, stderr = await proc.communicate()
 
-        if stdout and (chip := self.confirm_chip(stdout.decode())):
-            result = '\t[+] Your hardware: ' + chip
-        else:
-            result = '\t[!] Unable to detect your hardware (' + chip + ')'
+        SYSTEM = platform.system()
+        plfrm = platform.machine() + '-' + platform.platform(aliased=True, terse=True) + '-' + SYSTEM + '-' + platform.processor()
 
+        if stdout and (chip := self.confirm_chip(stdout.decode())):
+            WIFI_CHIP = chip
+            result = '\t[+] Your hardware: ' + chip + ': ' + plfrm
+        else:
+            result = '\t[!] Unable to detect your Wi-Fi chip. System: ' + plfrm
+
+        softap_detected = await self.detect_softap()
+
+        self.query_one("#softap-status", Static).update(softap_detected)
         self.query_one("#detected-chip", Static).update(result)
 
 
     async def check_connected_clients(self) -> None:
         pass
+
+
+    async def check_iotempower(self) -> None:
+        global IOTEMPOWER
+
+        out = subprocess.run(['[ "$IOTEMPOWER_ACTIVE" = "yes" ]'], capture_output=True, text=True)
+        print(out.stdout)
+
+        IOTEMPOWER = ''
 
 
     def activate_brcm_minimal(self) -> None:

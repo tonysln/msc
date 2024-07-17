@@ -220,9 +220,11 @@ class APConfigurator(App):
         else:
             result = '\t[!] Unable to detect your Wi-Fi chip. System: ' + plfrm
 
-        softap_detected = await self.detect_softap()
+        # softap_detected = await self.detect_softap()
+        # self.query_one("#softap-status", Static).update(softap_detected)
 
-        self.query_one("#softap-status", Static).update(softap_detected)
+        self.check_iotempower()
+
         self.query_one("#detected-chip", Static).update(result)
 
 
@@ -233,10 +235,19 @@ class APConfigurator(App):
     async def check_iotempower(self) -> None:
         global IOTEMPOWER
 
-        out = subprocess.run(['[ "$IOTEMPOWER_ACTIVE" = "yes" ]'], capture_output=True, text=True)
-        print(out.stdout)
+        proc = await asyncio.create_subprocess_shell(
+            'echo $IOTEMPOWER_ACTIVE',
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
 
-        IOTEMPOWER = ''
+        if stdout:
+            IOTEMPOWER = "IoTempower activated!"
+        else:
+            IOTEMPOWER = "IoTempower not activated!"
+
+        self.query_one("#softap-status", Static).update(str(IOTEMPOWER))
 
 
     def activate_brcm_minimal(self) -> None:

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 
-from scripts.mqtt_alive import *
+from mqtt_alive import *
 
 import asyncio
 from textual import log

@@ -210,7 +210,7 @@ class QuitScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Grid(
-            Label("Please install IoTempower before using this app!", id="question"),
+            Label("Please install and activate IoTempower before using this app!", id="question"),
             Button("Quit", variant="error", id="quit"),
             Button("Cancel", variant="primary", id="cancel"),
             id="dialog",

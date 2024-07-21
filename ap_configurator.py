@@ -6,8 +6,8 @@ from mqtt_alive import *
 import asyncio
 from textual import log
 from textual.app import App, ComposeResult
-from textual.containers import VerticalScroll
-from textual.widgets import Button, Header, Footer, Static, OptionList, Input, RadioButton, RadioSet
+from textual.containers import VerticalScroll, Grid
+from textual.widgets import Button, Header, Footer, Static, OptionList, Input, RadioButton, RadioSet, Label
 from textual.widgets.option_list import Option, Separator
 from textual.reactive import reactive
 from textual.message import Message
@@ -23,6 +23,15 @@ WIFI_CHIP = ''
 SYSTEM = ''
 SOFTAP = ''
 IOTEMPOWER = ''
+WDEVICE = 'wlan0' # TODO iwconfig -> acquire device name (wlan0)
+
+
+def update_static(screen, idd, text, append=False) -> None:
+    """Utility function to update static screen object"""
+    s = screen.query_one(f'#{idd}', Static)
+    newtext = text if not append else s.renderable + text
+    s.update(newtext)
+
 
 
 class ConnectedClients(Screen):
@@ -42,14 +51,13 @@ class ConnectedClients(Screen):
 
 
     async def check_connected_clients(self) -> None:
-        # TODO run MQTT part and arp-scan separately
+        global WDEVICE
 
-        # TODO iwconfig -> acquire device name (wlan0)
-        dev = 'wlan0'
-        out = run_arp_scan(dev) # TODO await
-
-        self.query_one("#scanres1", Static).update(f"""
+        out = await run_arp_scan(WDEVICE)
+        update_static(self, 'scanres1', f"""
             Scan result: {out}
+
+            Total clients: {len(out.keys())}
             """)
 
 
@@ -68,30 +76,20 @@ class LocalConfiguration(Screen):
         yield Header()
         yield Static("""
             # Configure Access Point
-
-            Input...
-
-            [Configure]
-
-            Waiting for completion ... 
-
-            Might require a restart or modprobe ...
-
-            [Test Connection]
             """)
 
-        yield Static('AP software/method/backend:')
-        with RadioSet():
-            yield RadioButton("NetworkManager", value=True)
-            yield RadioButton("hostapd")
+        yield Static('\tAP software/method/backend:')
+        with RadioSet(id='ap_backend'):
+            yield RadioButton("NetworkManager", value=True, id='networkmanager')
+            yield RadioButton("hostapd", id="hostapd")
 
-        yield Static('The name for the network:')
-        yield Input(placeholder="Network Name")
-        yield Static('Password for the network:')
-        yield Input(placeholder="Password", password=True)
+        yield Static('\tThe name for the network:')
+        yield Input(placeholder="Network Name", id='bssid')
+        yield Static('\tPassword for the network:')
+        yield Input(placeholder="Password", password=True, id='netpass')
 
         yield Button("Configure", id="config-btn", classes="buttons")
-        yield Static('\n', id="status")
+        yield Static('\t\n', id="status")
         
         yield Footer()
 
@@ -101,7 +99,18 @@ class LocalConfiguration(Screen):
 
     async def configure_local(self) -> None:
         # if broadcom -> check firmware folders, if minimal found -> apply
-        self.query_one("#status", Static).update('\t[.] Starting configuration...\n')
+
+        backend = self.query_one('#ap_backend').pressed_button.id
+        nname = self.query_one('#bssid').value
+        npass = self.query_one('#netpass').value
+
+        if not backend or not nname or not npass or len(nname) < 2 or len(nname) > 32 or len(npass) < 8 or len(npass) > 128:
+            update_static(self, 'status', '\t[!] Incorrect configuration!')
+            return 
+
+        update_static(self, 'status', '\t[.] Starting configuration...')
+        
+
 
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -196,6 +205,24 @@ class WiFiChipInfo(Screen):
         yield Footer()
 
 
+class QuitScreen(Screen):
+    """Screen with a dialog to quit."""
+
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Label("Please install IoTempower before using this app!", id="question"),
+            Button("Quit", variant="error", id="quit"),
+            Button("Cancel", variant="primary", id="cancel"),
+            id="dialog",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "quit":
+            self.app.exit()
+        else:
+            self.app.pop_screen()
+
+
 
 class APConfigurator(App):
     """Access point configuration app"""
@@ -245,7 +272,7 @@ class APConfigurator(App):
         detected = detected.lower()
 
         if 'netman_available' in detected:
-            SOFTAP = 'NetworkManager'
+            SOFTAP = 'networkmanager'
         if 'hostapd_available' in detected:
             SOFTAP = 'hostapd'
 
@@ -264,6 +291,10 @@ class APConfigurator(App):
 
 
     async def handle_option(self, option_id: str) -> None:
+        if not IOTEMPOWER and not option_id == "vq":
+            self.push_screen(QuitScreen())
+            return
+
         if option_id == "cap":
             self.push_screen('localconf')
         elif option_id == "cor":
@@ -281,7 +312,7 @@ class APConfigurator(App):
     async def update_detected_chip(self) -> None:
         global SYSTEM, SOFTAP, WIFI_CHIP
 
-        self.query_one("#detected-chip", Static).update('\t[.] Running chip detection...\n')
+        update_static(self, 'detected-chip', '\t[.] Running chip detection...\n')
 
         proc = await asyncio.create_subprocess_shell(
             "sudo bash ./scripts/detect_wifi_chip.sh",
@@ -299,10 +330,10 @@ class APConfigurator(App):
         else:
             result = '\t[!] Unable to detect your Wi-Fi chip.\n\t    System: ' + plfrm
 
-        self.query_one("#detected-chip", Static).update(result)
+        update_static(self, 'detected-chip', result)
 
-        if SOFTAP:
-            self.query_one("#softap-status", Static).update('\n\t[+] ' + SOFTAP + ' has been detected')
+        #if SOFTAP:
+            #update_static(self, 'softap-status', '\n\t[+] ' + SOFTAP + ' has been detected')
 
 
 
@@ -310,7 +341,7 @@ class APConfigurator(App):
         global IOTEMPOWER
 
         proc = await asyncio.create_subprocess_shell(
-            'iot && echo $IOTEMPOWER_ACTIVE',
+            'iot ; echo $IOTEMPOWER_ACTIVE',
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
@@ -318,9 +349,12 @@ class APConfigurator(App):
 
         IOTEMPOWER = stdout.decode() == 'yes'
 
-        status = "\t[+] IoTempower available!" if IOTEMPOWER else "\t[-] IoTempower is not installed!"
+        status = "\t[+] IoTempower available!" if IOTEMPOWER else "\t[-] IoTempower is not installed! Functionality is not available!"
 
-        self.query_one("#iotemp-status", Static).update(status)
+        update_static(self, 'iotemp-status', status)
+
+        if not IOTEMPOWER:
+            self.push_screen(QuitScreen())
 
 
     def activate_brcm_minimal(self) -> None:

@@ -48,6 +48,23 @@ parsed_output=$(echo $lshw_raw | xmllint --html --xpath "
 awk_output=$(echo "$parsed_output" | awk 'BEGIN { RS="</td>"; FS="<td class=\"second\">"; } NF>1 { print $2 } NR==6 { exit }')
 
 
+# Existing AP software detection
+hostapd "--version"
+hp1=$?
+
+nmcli "-v"
+nm1=$?
+
+hp_avail=""
+nm_avail=""
+if [ $hp1 -eq 0 ]; then
+  hp_avail="hostapd_available"
+fi
+
+if [ $nm1 -eq 0 ]; then
+  nm_avail="netman_available"
+fi
+
 # Concatenate all outputs
-combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw" | sort | uniq)
+combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw,$hp_avail,$nm_avail," | sort | uniq)
 echo $combined

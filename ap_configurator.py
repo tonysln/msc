@@ -157,6 +157,7 @@ class APConfigurator(App):
             yield Static("", id="detected-chip")
             yield Static("", id="selected-option")
             yield Static("", id="softap-status")
+            yield Static("", id="iotemp-status")
             yield OptionList(
                 Option("Configure Access Point", id="cap"),
                 Option("Configure OpenWRT Router", id="cor"),
@@ -182,7 +183,14 @@ class APConfigurator(App):
 
 
     def confirm_chip(self, detected) -> str:
+        global SOFTAP
+
         detected = detected.lower()
+
+        if 'netman_available' in detected:
+            SOFTAP = 'NetworkManager'
+        if 'hostapd_available' in detected:
+            SOFTAP = 'hostapd'
 
         if any(x in detected for x in ['brcm', 'broadcom', 'bcm']):
             return 'Broadcom'
@@ -217,26 +225,6 @@ class APConfigurator(App):
             self.action_quit()
 
 
-    async def detect_softap(self) -> str:
-        res1 = subprocess.run(['cat', '/etc/hostapd'], capture_output=True, text=True)
-        res1 = res1.stdout
-
-        res2 = subprocess.run(['grep', '-i', 'renderer', '/etc/netplan/*.yaml'], capture_output=True, text=True)
-        res2 = res2.stdout
-
-        res3 = subprocess.run(['systemctl', 'status', 'NetworkManager'], capture_output=True, text=True)
-        res3 = res3.stdout
-
-        res4 = subprocess.run(['hostapd'], capture_output=True, text=True)
-        res4 = res4.stdout
-
-        res5 = subprocess.run(['nmcli'], capture_output=True, text=True)
-        res5 = res5.stdout
-
-        out = ', '.join([res1, res2, res3, res4, res5])
-        return out
-
-
     async def update_detected_chip(self) -> None:
         global SYSTEM, SOFTAP, WIFI_CHIP
 
@@ -258,10 +246,10 @@ class APConfigurator(App):
         else:
             result = '\t[!] Unable to detect your Wi-Fi chip.\n\t    System: ' + plfrm
 
-        # softap_detected = await self.detect_softap()
-        # self.query_one("#softap-status", Static).update(softap_detected)
-
         self.query_one("#detected-chip", Static).update(result)
+
+        if SOFTAP:
+            self.query_one("#softap-status", Static).update('\n\t[+] ' + SOFTAP + ' has been detected')
 
 
     async def check_connected_clients(self) -> None:
@@ -280,9 +268,9 @@ class APConfigurator(App):
 
         IOTEMPOWER = stdout.decode() == 'yes'
 
-        status = "\n\t[+] IoTempower activated!" if IOTEMPOWER else "\n\t[-] IoTempower is not activated!"
+        status = "\t[+] IoTempower activated!" if IOTEMPOWER else "\t[-] IoTempower is not activated!"
 
-        self.query_one("#softap-status", Static).update(status)
+        self.query_one("#iotemp-status", Static).update(status)
 
 
     def activate_brcm_minimal(self) -> None:

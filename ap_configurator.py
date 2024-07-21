@@ -315,7 +315,7 @@ class APConfigurator(App):
         update_static(self, 'detected-chip', '\t[.] Running chip detection...\n')
 
         proc = await asyncio.create_subprocess_shell(
-            "sudo bash ./scripts/detect_wifi_chip.sh",
+            "bash ./scripts/detect_wifi_chip.sh",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
@@ -341,7 +341,7 @@ class APConfigurator(App):
         global IOTEMPOWER
 
         proc = await asyncio.create_subprocess_shell(
-            'iot ; echo $IOTEMPOWER_ACTIVE',
+            'bash ./scripts/detect_iotempower.sh',
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )

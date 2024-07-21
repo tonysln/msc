@@ -18,7 +18,7 @@ filter_msg() {
 
 
 # Kernel logs
-dmesg=$(filter_msg "$(sudo dmesg)")
+dmesg=$(filter_msg "$(dmesg)")
 
 # Gather status and capabilities,
 # join with lshw "logical name"
@@ -26,15 +26,15 @@ dmesg=$(filter_msg "$(sudo dmesg)")
 
 # Lookup from known/supported chips/vendors
 # from connected USB devices
-usb=$(filter_msg "$(sudo lsusb)")
+usb=$(filter_msg "$(lsusb)")
 
 # Lookup from known/supported chips/vendors
-pci=$(filter_msg "$(sudo lspci)")
+pci=$(filter_msg "$(lspci)")
 
 # Find "Wireless interface" and collect 
 # product, vendor, bus info, logical name, 
 # serial, capabilities and configuration.
-lshw_raw=$(sudo lshw -html -C network)
+lshw_raw=$(lshw -html -C network)
 lshw=$(filter_msg "$lshw_raw")
 
 # Parse lshw's HTML output separately

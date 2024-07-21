@@ -7,7 +7,7 @@ import asyncio
 from textual import log
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
-from textual.widgets import Button, Header, Footer, Static, OptionList
+from textual.widgets import Button, Header, Footer, Static, OptionList, Input, RadioButton, RadioSet
 from textual.widgets.option_list import Option, Separator
 from textual.reactive import reactive
 from textual.message import Message
@@ -33,21 +33,32 @@ class ConnectedClients(Screen):
         yield Static("""
             # Connected Clients
             """)
+        yield Static(f"""
+            Click on Scan to begin
+            """, id="scanres1")
+        yield Button("Scan", id="scan-btn", classes="buttons")
 
+        yield Footer()
+
+
+    async def check_connected_clients(self) -> None:
         # TODO run MQTT part and arp-scan separately
 
         # TODO iwconfig -> acquire device name (wlan0)
         dev = 'wlan0'
-        out = run_arp_scan(dev) # TODO async after opening screen
+        out = run_arp_scan(dev) # TODO await
 
-        yield Static(f"""
+        self.query_one("#scanres1", Static).update(f"""
             Scan result: {out}
             """)
 
-        yield Footer()
 
     def on_mount(self):
         pass
+
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        asyncio.create_task(self.check_connected_clients())
 
 
 class LocalConfiguration(Screen):
@@ -58,11 +69,7 @@ class LocalConfiguration(Screen):
         yield Static("""
             # Configure Access Point
 
-            - Backend: hostapd or NetworkManager
-            - SSID/network name: Input
-            - Password: Input
-            - MAC?
-            - ??
+            Input...
 
             [Configure]
 
@@ -72,7 +79,33 @@ class LocalConfiguration(Screen):
 
             [Test Connection]
             """)
+
+        yield Static('AP software/method/backend:')
+        with RadioSet():
+            yield RadioButton("NetworkManager", value=True)
+            yield RadioButton("hostapd")
+
+        yield Static('The name for the network:')
+        yield Input(placeholder="Network Name")
+        yield Static('Password for the network:')
+        yield Input(placeholder="Password", password=True)
+
+        yield Button("Configure", id="config-btn", classes="buttons")
+        yield Static('\n', id="status")
+        
         yield Footer()
+
+
+    def on_mount(self):
+        pass
+
+    async def configure_local(self) -> None:
+        # if broadcom -> check firmware folders, if minimal found -> apply
+        self.query_one("#status", Static).update('\t[.] Starting configuration...\n')
+
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        asyncio.create_task(self.configure_local())
 
 
 class OpenWRTConfiguration(Screen):
@@ -106,6 +139,12 @@ class OpenWRTConfiguration(Screen):
 
             [Test Connection]
             """)
+
+        yield Static('The name for the network:')
+        yield Input(placeholder="Network Name")
+        yield Static('Password for the network:')
+        yield Input(placeholder="Password", password=True)
+
         yield Footer()
 
 
@@ -116,6 +155,16 @@ class APSettings(Screen):
         yield Header()
         yield Static("""
             # Access Point Settings
+
+            Chosen network name: ...
+            IP: ...
+
+            MQTT IP: ...
+            Type of AP software: ...
+
+            OpenWRT? ...
+
+            IoTempower? ...
             """)
 
         # TODO first detect if hostapd or nm,
@@ -131,6 +180,15 @@ class WiFiChipInfo(Screen):
         yield Header()
         yield Static("""
             # Wi-Fi Chip Information
+
+            Wi-Fi chip make, model, version numbers, architecture ...
+
+            Type of drivers you are running, firmware? 
+
+            General system info ...
+
+
+            Some information on what the support for your hardware is ...
             """)
 
         # TODO additional lookup for driver info, probably through modprobe
@@ -154,10 +212,9 @@ class APConfigurator(App):
             This application will help you automatically configure
             your Access Point and network settings.
             """)
-            yield Static("", id="detected-chip")
-            yield Static("", id="selected-option")
-            yield Static("", id="softap-status")
-            yield Static("", id="iotemp-status")
+            yield Static("\n\n", id="detected-chip")
+            yield Static("\n", id="softap-status")
+            yield Static("\n\n", id="iotemp-status")
             yield OptionList(
                 Option("Configure Access Point", id="cap"),
                 Option("Configure OpenWRT Router", id="cor"),
@@ -206,10 +263,6 @@ class APConfigurator(App):
         await self.handle_option(message.option.id)
 
 
-    def show_message(self, message: str) -> None:
-        self.query_one("#selected-option", Static).update('\t' + message)
-
-
     async def handle_option(self, option_id: str) -> None:
         if option_id == "cap":
             self.push_screen('localconf')
@@ -228,7 +281,7 @@ class APConfigurator(App):
     async def update_detected_chip(self) -> None:
         global SYSTEM, SOFTAP, WIFI_CHIP
 
-        self.query_one("#detected-chip", Static).update('\t[.] Running chip detection...')
+        self.query_one("#detected-chip", Static).update('\t[.] Running chip detection...\n')
 
         proc = await asyncio.create_subprocess_shell(
             "sudo bash ./scripts/detect_wifi_chip.sh",
@@ -252,15 +305,12 @@ class APConfigurator(App):
             self.query_one("#softap-status", Static).update('\n\t[+] ' + SOFTAP + ' has been detected')
 
 
-    async def check_connected_clients(self) -> None:
-        pass
-
 
     async def check_iotempower(self) -> None:
         global IOTEMPOWER
 
         proc = await asyncio.create_subprocess_shell(
-            'echo $IOTEMPOWER_ACTIVE',
+            'iot && echo $IOTEMPOWER_ACTIVE',
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
@@ -268,7 +318,7 @@ class APConfigurator(App):
 
         IOTEMPOWER = stdout.decode() == 'yes'
 
-        status = "\t[+] IoTempower activated!" if IOTEMPOWER else "\t[-] IoTempower is not activated!"
+        status = "\t[+] IoTempower available!" if IOTEMPOWER else "\t[-] IoTempower is not installed!"
 
         self.query_one("#iotemp-status", Static).update(status)
 

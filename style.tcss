@@ -5,3 +5,7 @@
     border: tall $background;
     padding: 1 2;
 }
+
+.buttons {
+    margin: 2 12;
+}

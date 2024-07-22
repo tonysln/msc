@@ -11,6 +11,7 @@ from textual.widgets import Button, Header, Footer, Static, OptionList, Input, R
 from textual.widgets.option_list import Option, Separator
 from textual.reactive import reactive
 from textual.message import Message
+from textual.widgets import Markdown
 from textual.screen import Screen
 from textual import events
 import platform
@@ -53,8 +54,8 @@ class ConnectedClients(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("""
-            # Connected Clients
+        yield Markdown("""
+# Connected Clients
             """)
         yield Static(f"""
             Click on Scan to begin
@@ -88,8 +89,8 @@ class LocalConfiguration(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("""
-            # Configure Access Point
+        yield Markdown("""
+# Configure Access Point
             """)
 
         yield Static('\tAP software/method/backend:')
@@ -174,24 +175,24 @@ class OpenWRTConfiguration(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("""
-            # Configure OpenWRT Router
+        yield Markdown("""
+# Configure OpenWRT Router
 
-            Make sure your router has the following requirements met: ...
-            ...
+Make sure your router has the following requirements met: ...
+...
 
-            Step 2:
+Step 2:
 
-            - Upload firmware from here ...
-            - and/or enable SSH or something
+- Upload firmware from here ...
+- and/or enable SSH or something
 
-            [Connect]
+[Connect]
 
-            Wait for completion... uploading settings ... updating ... 
+Wait for completion... uploading settings ... updating ... 
 
-            Restarting ...
+Restarting ...
 
-            [Test Connection]
+[Test Connection]
             """)
 
         yield Static('\tThe name for the network:')
@@ -241,22 +242,19 @@ class APSettings(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("""
-            # Access Point Settings
+        yield Markdown(f"""
+# Access Point Settings
 
-            Chosen network name: ...
-            IP: ...
+Chosen network name: ... todo env
+IP: ... todo env {BASEIP}
 
-            MQTT IP: ...
-            Type of AP software: ...
+MQTT IP: ...
+Type of AP software: {SOFTAP}
 
-            OpenWRT? ...
+OpenWRT? ... todo store in env var
 
-            IoTempower? ...
+IoTempower? {IOTEMPOWER}
             """)
-
-        # TODO first detect if hostapd or nm,
-        # underlying iwd or wpa_supplicant etc
 
         yield Footer()
 
@@ -266,17 +264,18 @@ class WiFiChipInfo(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("""
-            # Wi-Fi Chip Information
+        yield Markdown(f"""
+# Wi-Fi Chip Information
 
-            Wi-Fi chip make, model, version numbers, architecture ...
+Your Wi-Fi chip manufacturer: **{WIFI_CHIP}**
 
-            Type of drivers you are running, firmware? 
+Type of drivers you are running, firmware? 
 
-            General system info ...
+General system info: **{SYSTEM}**
 
+---
 
-            Some information on what the support for your hardware is ...
+Some information on what the support for your hardware is ...
             """)
 
         # TODO additional lookup for driver info, probably through modprobe
@@ -312,12 +311,13 @@ class APConfigurator(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll():
-            yield Static("""
-            # Welcome to APConfigurator
+            yield Markdown("""
+# Welcome to APConfigurator
 
-            This application will help you automatically configure
-            your Access Point and network settings.
+This application will help you automatically configure
+your Access Point and network settings.
             """)
+
             yield Static("\n\n", id="detected-chip")
             yield Static("\n", id="softap-status")
             yield Static("\n\n", id="iotemp-status")
@@ -400,14 +400,14 @@ class APConfigurator(App):
         )
         stdout, stderr = await proc.communicate()
 
-        SYSTEM = platform.system()
-        plfrm = platform.machine() + '-' + platform.platform(aliased=True, terse=True) + '-' + SYSTEM + '-' + platform.processor()
+        plfrm = platform.machine() + '-' + platform.platform(aliased=True, terse=True) + '-' + platform.system() + '-' + platform.processor()
+        SYSTEM = plfrm
 
         if stdout and (chip := self.confirm_chip(stdout.decode())):
             WIFI_CHIP = chip
-            result = '\t[+] Your Wi-Fi chip: ' + chip + '\n\t    System: ' + plfrm
+            result = '\t[+] Your Wi-Fi chip: ' + chip + '\n' + stdout.decode()
         else:
-            result = '\t[!] Unable to detect your Wi-Fi chip.\n\t    System: ' + plfrm
+            result = '\t[!] Unable to detect your Wi-Fi chip.'
 
         update_static(self, 'detected-chip', result)
 

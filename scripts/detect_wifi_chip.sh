@@ -29,7 +29,7 @@ dmesg=$(filter_msg "$(dmesg)")
 usb=$(filter_msg "$(lsusb)")
 
 # Lookup from known/supported chips/vendors
-pci=$(filter_msg "$(lspci)")
+pci=$(filter_msg "$(lspci -v)")
 
 # Find "Wireless interface" and collect 
 # product, vendor, bus info, logical name, 
@@ -45,7 +45,10 @@ parsed_output=$(echo $lshw_raw | xmllint --html --xpath "
 " - 2>/dev/null)
 
 # Extract the initial 6 fields, interested in the first three lines mostly
-awk_output=$(echo "$parsed_output" | awk 'BEGIN { RS="</td>"; FS="<td class=\"second\">"; } NF>1 { print $2 } NR==6 { exit }')
+awk_output=$(echo "$parsed_output" | awk '
+  BEGIN { RS="</td>"; FS="<td class=\"second\">"; } 
+  NF>1 { print $2 } 
+  NR==6 { exit }')
 
 
 # Existing AP software detection
@@ -64,6 +67,15 @@ fi
 if [ $nm1 -eq 0 ]; then
   nm_avail="netman_available"
 fi
+
+# Separate pass over lspci to hopefully extract manufacturer, chip and driver name 
+lspci_output=$(lspci -v)
+
+subsystem=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /Subsystem:/){print $0;f=0}}' | sed 's/Subsystem: //')
+kernel_driver=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /Kernel driver in use:/){print $0;f=0}}' | sed 's/Kernel driver in use: //')
+
+echo "controller_subsystem:$subsystem"
+echo "kernel_driver_in_use:$kernel_driver"
 
 # Concatenate all outputs
 combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw,$hp_avail,$nm_avail," | sort | uniq)

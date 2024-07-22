@@ -29,7 +29,7 @@ dmesg=$(filter_msg "$(dmesg)")
 usb=$(filter_msg "$(lsusb)")
 
 # Lookup from known/supported chips/vendors
-pci=$(filter_msg "$(lspci -v)")
+pci=$(filter_msg "$(lspci -nn)")
 
 # Find "Wireless interface" and collect 
 # product, vendor, bus info, logical name, 
@@ -49,6 +49,8 @@ awk_output=$(echo "$parsed_output" | awk '
   BEGIN { RS="</td>"; FS="<td class=\"second\">"; } 
   NF>1 { print $2 } 
   NR==6 { exit }')
+
+lshw_config=$(lshw -C network | grep -i configuration)
 
 
 # Existing AP software detection
@@ -72,11 +74,13 @@ fi
 lspci_output=$(lspci -v)
 
 subsystem=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /Subsystem:/){print $0;f=0}}' | sed 's/Subsystem: //')
+pci=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /PCI bridge:/){print $0;f=0}}' | sed 's/PCI bridge: //')
 kernel_driver=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /Kernel driver in use:/){print $0;f=0}}' | sed 's/Kernel driver in use: //')
 
 echo "controller_subsystem:$subsystem"
+echo "pci_controller:$pci"
 echo "kernel_driver_in_use:$kernel_driver"
 
 # Concatenate all outputs
-combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw,$hp_avail,$nm_avail," | sort | uniq)
+combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw,$hp_avail,$nm_avail,$lshw_config" | sort | uniq)
 echo $combined

@@ -15,4 +15,4 @@ export IOTEMPOWER_AP_IP=$baseip
 
 # Call the iotempower script from bin/,
 # iot env must be activated!
-accesspoint
+echo $(accesspoint)

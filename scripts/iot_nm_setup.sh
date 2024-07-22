@@ -12,4 +12,4 @@ netmask=$4
 
 # Call the iotempower script from bin/,
 # iot env must be activated!
-accesspoint-nm create --ssid $nname --password $npass --ip $baseip --netmask $netmask
+echo $(accesspoint-nm create --ssid $nname --password $npass --ip $baseip --netmask $netmask)

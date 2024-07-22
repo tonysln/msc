@@ -81,6 +81,10 @@ echo "controller_subsystem:$subsystem"
 echo "pci_controller:$pci"
 echo "kernel_driver_in_use:$kernel_driver"
 
+# CPU info string, works well on RPis
+cpuver=$(cat /proc/cpuinfo | grep Model | awk -F ': ' '{print $2}')
+echo "cpuver:$cpuver"
+
 # Concatenate all outputs
 combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw,$hp_avail,$nm_avail,$lshw_config" | sort | uniq)
 echo $combined

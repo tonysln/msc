@@ -21,6 +21,7 @@ import sys
 
 
 WIFI_CHIP = ''
+WIFI_CHIP_FULL = ''
 SYSTEM = ''
 SOFTAP = ''
 IOTEMPOWER = ''
@@ -269,16 +270,18 @@ class WiFiChipInfo(Screen):
 
 Your Wi-Fi chip manufacturer: **{WIFI_CHIP}**
 
-Type of drivers you are running, firmware? 
+Type of drivers you are running, firmware? {WIFI_CHIP_FULL}
 
 General system info: **{SYSTEM}**
 
 ---
 
-Some information on what the support for your hardware is ...
-            """)
+It appears that you have an Intel Wi-Fi chip on your system with an unknown upper maximum limit on connected clients ...
 
-        # TODO additional lookup for driver info, probably through modprobe
+It appears that you have an Intel Wi-Fi chip on your system with a known upper client limit of **11** devices, which means that no more than 11 clients can be connected to your computer at the same time! ...
+
+It appears that you have a Broadcom Wi-Fi chip with a potential client limit of only **8**, which means that no more than  clients can be connected ... A minimal firmare version is available, which might increase the client limit to **20**... 
+            """)
 
         yield Footer()
 
@@ -346,8 +349,9 @@ your Access Point and network settings.
 
 
     def confirm_chip(self, detected) -> str:
-        global SOFTAP
+        global SOFTAP, WIFI_CHIP_FULL
 
+        WIFI_CHIP_FULL = detected
         detected = detected.lower()
 
         if 'netman_available' in detected:
@@ -405,7 +409,7 @@ your Access Point and network settings.
 
         if stdout and (chip := self.confirm_chip(stdout.decode())):
             WIFI_CHIP = chip
-            result = '\t[+] Your Wi-Fi chip: ' + chip + '\n' + stdout.decode()
+            result = '\t[+] Your Wi-Fi chip: ' + chip
         else:
             result = '\t[!] Unable to detect your Wi-Fi chip.'
 

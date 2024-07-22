@@ -3,6 +3,12 @@
 minimal_firmware_path="/lib/firmware/cypress/cyfmac43455-sdio-minimal.bin"
 default_firmware_path="/lib/firmware/brcm/brcmfmac43455-sdio.bin"
 
+
+if [[ ! -e minimal_firmware_path ]]; then
+    echo "The minimal firmware file could not be found!"
+    exit
+fi
+
 # Check if we have the right firmware in use right now already
 symlink_check=$(readlink -f "$default_firmware_path")
 
@@ -37,7 +43,6 @@ fi
 echo "Replacing default firmware file with the minimal version. NB! sudo access is required for the following operation!"
 
 # First remove the update-alternatives links for cyfmac, we're taking over
-# TODO ensure silence
 sudo update-alternatives --quiet --remove-all cyfmac43455-sdio.bin
 
 sudo ln -sf "$minimal_firmware_path" "$default_firmware_path"

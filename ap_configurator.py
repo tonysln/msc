@@ -7,7 +7,7 @@ import asyncio
 from textual import log
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll, Grid
-from textual.widgets import Button, Header, Footer, Static, OptionList, Input, RadioButton, RadioSet, Label
+from textual.widgets import Button, Header, Footer, Static, OptionList, Input, RadioButton, RadioSet, Label, Log
 from textual.widgets.option_list import Option, Separator
 from textual.reactive import reactive
 from textual.message import Message
@@ -23,7 +23,8 @@ WIFI_CHIP = ''
 SYSTEM = ''
 SOFTAP = ''
 IOTEMPOWER = ''
-WDEVICE = 'wlan0' # TODO iwconfig -> acquire device name (wlan0)
+WDEVICE = 'wlan0' # TODO get from iotempower vars
+BASEIP = '192.168.12.1'
 
 
 def update_static(screen, idd, text, append=False) -> None:
@@ -32,6 +33,19 @@ def update_static(screen, idd, text, append=False) -> None:
     newtext = text if not append else s.renderable + text
     s.update(newtext)
 
+
+def validate_config_params(log, backend, nname, npass, npass2) -> bool:
+    if not backend or not nname or not npass or len(nname) < 2 or len(nname) > 32 or len(npass) < 8 or len(npass) > 128:
+        log.clear()
+        log.write_line('[!] Make sure your network name is valid and password has at least 8 characters!')
+        return False
+
+    if npass != npass2:
+        log.clear()
+        log.write_line('[!] The passwords do not match!')
+        return False
+
+    return True
 
 
 class ConnectedClients(Screen):
@@ -84,12 +98,16 @@ class LocalConfiguration(Screen):
             yield RadioButton("hostapd", id="hostapd")
 
         yield Static('\tThe name for the network:')
-        yield Input(placeholder="Network Name", id='bssid')
+        yield Input(placeholder="Network Name", id='ssid')
         yield Static('\tPassword for the network:')
         yield Input(placeholder="Password", password=True, id='netpass')
+        yield Static('\tPassword confirmation:')
+        yield Input(placeholder="Password", password=True, id='netpass2')
+
+        yield Static(f'\n\tThe default IP address of {BASEIP} will be used for the network.')
 
         yield Button("Configure", id="config-btn", classes="buttons")
-        yield Static('\t\n', id="status")
+        yield Log('\t\n', id="status")
         
         yield Footer()
 
@@ -98,23 +116,57 @@ class LocalConfiguration(Screen):
         pass
 
     async def configure_local(self) -> None:
-        # if broadcom -> check firmware folders, if minimal found -> apply
-
         backend = self.query_one('#ap_backend').pressed_button.id
-        nname = self.query_one('#bssid').value
+        nname = self.query_one('#ssid').value
         npass = self.query_one('#netpass').value
+        npass2 = self.query_one('#netpass2').value
 
-        if not backend or not nname or not npass or len(nname) < 2 or len(nname) > 32 or len(npass) < 8 or len(npass) > 128:
-            update_static(self, 'status', '\t[!] Incorrect configuration!')
-            return 
+        log = self.query_one(Log)
 
-        update_static(self, 'status', '\t[.] Starting configuration...')
+        if not validate_config_params(log, backend, nname, npass, npass2):
+            return
+
+        log.clear()
+        log.write_line('Starting configuration...')
+        self.query_one('#config-btn', Button).disabled = True
         
+        if WIFI_CHIP == 'Broadcom' or True:
+            log.write_line('Attempting to activate minimal firmware for your Wi-Fi chip...')
+
+            proc = await asyncio.create_subprocess_shell(
+                "bash ./scripts/activate_brcm_minimal.sh", # TODO solve sudo issue
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            log.write_line(stdout.decode())
+            log.write_line(stderr.decode())
+        
+
+        if backend == 'hostapd':
+            log.write_line('Running hostapd setup...')
+            proc = await asyncio.create_subprocess_shell(
+                f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {BASEIP}",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+        elif backend == 'networkmanager':
+            log.write_line('Running NetworkManager setup...')
+            proc = await asyncio.create_subprocess_shell(
+                f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {BASEIP} '/24'",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+        stdout, stderr = await proc.communicate()
+        log.write_line(stdout.decode())
+        log.write_line(stderr.decode())
 
 
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         asyncio.create_task(self.configure_local())
+
 
 
 class OpenWRTConfiguration(Screen):
@@ -127,13 +179,6 @@ class OpenWRTConfiguration(Screen):
 
             Make sure your router has the following requirements met: ...
             ...
-
-            Step 1:
-
-            - SSID/name?: Input
-            - Password: Input
-            - Version/something ...
-
 
             Step 2:
 
@@ -149,12 +194,46 @@ class OpenWRTConfiguration(Screen):
             [Test Connection]
             """)
 
-        yield Static('The name for the network:')
-        yield Input(placeholder="Network Name")
-        yield Static('Password for the network:')
-        yield Input(placeholder="Password", password=True)
+        yield Static('\tThe name for the network:')
+        yield Input(placeholder="Network Name", id='ssid')
+        yield Static('\tPassword for the network:')
+        yield Input(placeholder="Password", password=True, id='netpass')
+        yield Static('\tPassword confirmation:')
+        yield Input(placeholder="Password", password=True, id='netpass2')
+        yield Button("Configure", id="config-btn", classes="buttons")
+        yield Log('\t\n', id="status")
 
         yield Footer()
+
+
+    async def configure_openwrt(self) -> None:
+        nname = self.query_one('#ssid').value
+        npass = self.query_one('#netpass').value
+        npass2 = self.query_one('#netpass2').value
+        
+
+        log = self.query_one(Log)
+
+        if not validate_config_params(log, True, nname, npass, npass2):
+            return
+
+        log.clear()
+        log.write_line('Starting configuration...')
+        self.query_one('#config-btn', Button).disabled = True
+
+        proc = await asyncio.create_subprocess_shell(
+            f"bash ./scripts/iot_openwrt_setup.sh {nname} {npass} {BASEIP}",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+        log.write_line(stdout.decode())
+        log.write_line(stderr.decode())
+
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        asyncio.create_task(self.configure_openwrt())
+
 
 
 class APSettings(Screen):
@@ -291,9 +370,9 @@ class APConfigurator(App):
 
 
     async def handle_option(self, option_id: str) -> None:
-        if not IOTEMPOWER and not option_id == "vq":
-            self.push_screen(QuitScreen())
-            return
+        # if not IOTEMPOWER and not option_id == "vq":
+        #     self.push_screen(QuitScreen())
+        #     return
 
         if option_id == "cap":
             self.push_screen('localconf')
@@ -347,9 +426,9 @@ class APConfigurator(App):
         )
         stdout, stderr = await proc.communicate()
 
-        IOTEMPOWER = stdout.decode() == 'yes'
+        IOTEMPOWER = stdout.decode().strip() == 'yes'
 
-        status = "\t[+] IoTempower available!" if IOTEMPOWER else "\t[-] IoTempower is not installed! Functionality is not available!"
+        status = "\t[+] IoTempower is reachable and installed correctly!" if IOTEMPOWER else "\t[-] IoTempower is not installed! Functionality is not available!"
 
         update_static(self, 'iotemp-status', status)
 
@@ -367,4 +446,4 @@ class APConfigurator(App):
 
 if __name__ == "__main__":
     app = APConfigurator()  
-    app.run()
+    app.run(inline=False)

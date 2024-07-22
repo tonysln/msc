@@ -10,7 +10,7 @@
     margin: 2 12;
 }
 
-Input, RadioSet {
+Input, RadioSet, Log {
     margin: 1 12;
 }
 

@@ -245,19 +245,41 @@ class APSettings(Screen):
         yield Header()
         yield Markdown(f"""
 # Access Point Settings
+            """)
+        yield Footer()
 
-Chosen network name: ... todo env
-IP: ... todo env {BASEIP}
 
-MQTT IP: ...
+    async def read_credentials(self) -> None:
+        proc = await asyncio.create_subprocess_shell(
+            "bash ./scripts/read_wifi_creds.sh",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+        creds = stdout.decode()
+
+        if creds:
+            cl = creds.split(',')
+            creds = cl[0] + ' - ' + cl[2]
+        else:
+            creds = 'None found'
+        
+        self.query_one(Markdown).update(f"""
+# Access Point Settings
+
+Saved credentials: {creds}
+
+IP: {BASEIP}
+
 Type of AP software: {SOFTAP}
 
-OpenWRT? ... todo store in env var
-
-IoTempower? {IOTEMPOWER}
+IoTempower activated: {IOTEMPOWER}
             """)
 
-        yield Footer()
+
+    def on_mount(self) -> None:
+        asyncio.create_task(self.read_credentials())
+
 
 
 class WiFiChipInfo(Screen):
@@ -315,7 +337,7 @@ class APConfigurator(App):
         yield Header()
         with VerticalScroll():
             yield Markdown("""
-# Welcome to APConfigurator
+# APConfigurator
 
 This application will help you automatically configure
 your Access Point and network settings.
@@ -349,10 +371,13 @@ your Access Point and network settings.
 
 
     def confirm_chip(self, detected) -> str:
-        global SOFTAP, WIFI_CHIP_FULL
+        global SOFTAP, WIFI_CHIP_FULL, SYSTEM
 
         WIFI_CHIP_FULL = detected
         detected = detected.lower()
+
+        if 'raspberry' in detected:
+            SYSTEM += '-RPi' # todo
 
         if 'netman_available' in detected:
             SOFTAP = 'networkmanager'

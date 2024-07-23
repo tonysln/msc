@@ -51,7 +51,7 @@ awk_output=$(echo "$parsed_output" | awk '
   NR==6 { exit }')
 
 lshw_config=$(lshw -C network | grep -i configuration)
-
+echo "lshw_config:$lshw_config"
 
 # Existing AP software detection
 hostapd "--version"
@@ -77,14 +77,16 @@ subsystem=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /Sub
 pci=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /PCI bridge:/){print $0;f=0}}' | sed 's/PCI bridge: //')
 kernel_driver=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /Kernel driver in use:/){print $0;f=0}}' | sed 's/Kernel driver in use: //')
 
-echo "controller_subsystem:$subsystem"
-echo "pci_controller:$pci"
-echo "kernel_driver_in_use:$kernel_driver"
+echo "controller_subsystem:$subsystem;"
+echo "pci_controller:$pci;"
+echo "kernel_driver_in_use:$kernel_driver;"
 
 # CPU info string, works well on RPis
 cpuver=$(cat /proc/cpuinfo | grep Model | awk -F ': ' '{print $2}')
-echo "cpuver:$cpuver"
+echo "cpuver:$cpuver;"
+
+lsmod_driver=$(lsmod | grep cfg80211)
 
 # Concatenate all outputs
-combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw,$hp_avail,$nm_avail,$lshw_config" | sort | uniq)
+combined=$(echo -e "$awk_output,$dmesg,$usb,$pci,$lshw,$hp_avail,$nm_avail,$lsmod_driver" | sort | uniq)
 echo $combined

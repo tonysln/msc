@@ -23,7 +23,7 @@ import sys
 WIFI_CHIP = ''
 WIFI_CHIP_FULL = ''
 SYSTEM = ''
-SOFTAP = ''
+SOFTAP = '--'
 IOTEMPOWER = ''
 WDEVICE = 'wlan0' # TODO get from iotempower vars
 BASEIP = '192.168.12.1'
@@ -66,10 +66,38 @@ class ConnectedClients(Screen):
         yield Footer()
 
 
+    async def run_arp_scan(self, dev):
+        proc = await asyncio.create_subprocess_shell(
+                f"sudo arp-scan --localnet --interface={dev}",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+        stdout, stderr = await proc.communicate()
+
+        lines = stdout.decode().split('\n')
+        start_index = -1
+        end_index = -1
+
+        for index, line in enumerate(lines):
+            if line.startswith('Starting arp-scan'):
+                start_index = index
+            elif line.endswith('packets dropped by kernel'):
+                end_index = index
+                break
+
+        macs = lines[start_index+1:end_index-1] if start_index != -1 and end_index != -1 else []
+        out = {}
+        for m in macs:
+            row = m.split('\t')
+            out[row[0]] = row[1] # IP, MAC
+
+        return out
+
+
     async def check_connected_clients(self) -> None:
         global WDEVICE
 
-        out = await run_arp_scan(WDEVICE)
+        out = await self.run_arp_scan(WDEVICE)
         update_static(self, 'scanres1', f"""
             Scan result: {out}
 
@@ -136,7 +164,7 @@ class LocalConfiguration(Screen):
             log.write_line('Attempting to activate minimal firmware for your Wi-Fi chip...')
 
             proc = await asyncio.create_subprocess_shell(
-                "bash ./scripts/activate_brcm_minimal.sh", # TODO solve sudo issue
+                "bash ./scripts/activate_brcm_minimal.sh",
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
@@ -351,9 +379,9 @@ This application will help you automatically configure
 your Access Point and network settings.
             """)
 
-            yield Static("\n\n", id="detected-chip")
-            yield Static("\n", id="softap-status")
-            yield Static("\n\n", id="iotemp-status")
+            yield Static("", id="detected-chip")
+            yield Static("", id="softap-status")
+            yield Static("", id="iotemp-status")
             yield OptionList(
                 Option("Configure Access Point", id="cap"),
                 Option("Configure OpenWRT Router", id="cor"),
@@ -463,7 +491,7 @@ your Access Point and network settings.
 
         IOTEMPOWER = stdout.decode().strip() == 'yes'
 
-        status = "\t[+] IoTempower is reachable and installed correctly!" if IOTEMPOWER else "\t[-] IoTempower is not installed! Functionality is not available!"
+        status = "\t[+] IoTempower is reachable and installed correctly!" if IOTEMPOWER else "\t[-] IoTempower is not activated! Functionality is not available!"
 
         update_static(self, 'iotemp-status', status)
 

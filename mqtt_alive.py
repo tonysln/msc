@@ -12,9 +12,9 @@ dead_clients = {}
 lock = threading.Lock()
 
 
-async def run_arp_scan(dev):
+def run_arp_scan(dev):
     command = ['sudo', 'arp-scan', '--localnet', f'--interface={dev}']
-    result = await subprocess.run(command, capture_output=True, text=True)
+    result = subprocess.run(command, capture_output=True, text=True)
 
     lines = result.stdout.split('\n')
     start_index = -1

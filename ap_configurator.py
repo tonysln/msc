@@ -256,24 +256,28 @@ class APSettings(Screen):
             stderr=subprocess.PIPE
         )
         stdout, stderr = await proc.communicate()
-        creds = stdout.decode()
+        creds = stdout.decode().strip()
 
-        if creds:
+        ssid = '--'
+        ip = '--'
+        if len(creds) > 2 and ',' in creds:
             cl = creds.split(',')
-            creds = cl[0] + ' - ' + cl[2]
-        else:
-            creds = 'None found'
+            ssid = cl[0].strip()
+            ip = cl[2].strip()
         
         self.query_one(Markdown).update(f"""
 # Access Point Settings
 
-Saved credentials: {creds}
+The following Wi-Fi AP credentials can be found on your system:
 
-IP: {BASEIP}
+| Setting      | Value |
+| ----------- | ----------- |
+| Network name (SSID) | {ssid} |
+| IP address          | {ip}  |
+| Default IP for IoTempower | {BASEIP} |
+| IoTempower activated | {IOTEMPOWER} |
+| Other AP software present on system | {SOFTAP} |
 
-Type of AP software: {SOFTAP}
-
-IoTempower activated: {IOTEMPOWER}
             """)
 
 
@@ -306,6 +310,10 @@ It appears that you have a Broadcom Wi-Fi chip with a potential client limit of 
             """)
 
         yield Footer()
+
+
+    def on_mount(self) -> None:
+        pass
 
 
 class QuitScreen(Screen):
@@ -419,8 +427,6 @@ your Access Point and network settings.
 
     async def update_detected_chip(self) -> None:
         global SYSTEM, SOFTAP, WIFI_CHIP
-
-        update_static(self, 'detected-chip', '\t[.] Running chip detection...\n')
 
         proc = await asyncio.create_subprocess_shell(
             "bash ./scripts/detect_wifi_chip.sh",

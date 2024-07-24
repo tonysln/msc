@@ -145,6 +145,7 @@ class LocalConfiguration(Screen):
 
     def on_mount(self):
         if AP_RUNNING:
+            log = self.query_one(Log)
             log.clear()
             log.write_line('Access point is already running on this system!')
             self.query_one('#config-btn', Button).disabled = True

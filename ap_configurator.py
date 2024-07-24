@@ -24,6 +24,7 @@ WIFI_CHIP = ''
 WIFI_CHIP_FULL = ''
 SYSTEM = ''
 SOFTAP = '--'
+AP_RUNNING = ''
 IOTEMPOWER = ''
 WDEVICE = 'wlan0' # TODO get from iotempower vars
 BASEIP = '192.168.12.1'
@@ -404,6 +405,7 @@ your Access Point and network settings.
         self.install_screen(WiFiChipInfo(), name="wifichipinfo")
         asyncio.create_task(self.update_detected_chip())
         asyncio.create_task(self.check_iotempower())
+        asyncio.create_task(self.check_running_ap())
 
 
     def confirm_chip(self, detected) -> str:
@@ -474,9 +476,21 @@ your Access Point and network settings.
 
         update_static(self, 'detected-chip', result)
 
-        #if SOFTAP:
-            #update_static(self, 'softap-status', '\n\t[+] ' + SOFTAP + ' has been detected')
 
+
+    async def check_running_ap(self) -> None:
+        global AP_RUNNING
+
+        proc = await asyncio.create_subprocess_shell(
+            "ps -a | grep 'hostapd\\|create_ap\\|networkmanager'",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+        AP_RUNNING = stdout.decode() + stderr.decode()
+
+        if AP_RUNNING:
+            update_static(self, 'softap-status', '\n\t[+] An access point has been detected: ' + AP_RUNNING)
 
 
     async def check_iotempower(self) -> None:

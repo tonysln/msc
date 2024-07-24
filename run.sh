@@ -1,7 +1,5 @@
 #!/bin/bash
 
-iot
 
-sudo pwd
-
+sudo echo "Testing sudo rights for this user..."
 python3 ./ap_configurator.py

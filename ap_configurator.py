@@ -38,6 +38,7 @@ def update_static(screen, idd, text, append=False) -> None:
 
 
 def validate_config_params(log, backend, nname, npass, npass2) -> bool:
+    """Validate the given params: SSID and password for an AP"""
     if not backend or not nname or not npass or len(nname) < 2 or len(nname) > 32 or len(npass) < 8 or len(npass) > 128:
         log.clear()
         log.write_line('[!] Make sure your network name is valid and password has at least 8 characters!')
@@ -49,6 +50,18 @@ def validate_config_params(log, backend, nname, npass, npass2) -> bool:
         return False
 
     return True
+
+
+async def run_cmd_async(cmd):
+    """Run the given command asyncronously and return output"""
+    proc = await asyncio.create_subprocess_shell(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+    stdout, stderr = await proc.communicate()
+    return stdout.decode(),stderr.decode()
+
 
 
 class ConnectedClients(Screen):
@@ -68,14 +81,9 @@ class ConnectedClients(Screen):
 
 
     async def run_arp_scan(self, dev):
-        proc = await asyncio.create_subprocess_shell(
-                f"sudo arp-scan --localnet --interface={dev}",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-        stdout, stderr = await proc.communicate()
+        out,err = await run_cmd_async(f"sudo arp-scan --localnet --interface={dev}")
 
-        lines = stdout.decode().split('\n')
+        lines = out.split('\n')
         start_index = -1
         end_index = -1
 
@@ -169,35 +177,20 @@ class LocalConfiguration(Screen):
         if WIFI_CHIP == 'Broadcom' or True:
             log.write_line('Attempting to activate minimal firmware for your Wi-Fi chip...')
 
-            proc = await asyncio.create_subprocess_shell(
-                "bash ./scripts/activate_brcm_minimal.sh",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            stdout, stderr = await proc.communicate()
-            log.write_line(stdout.decode())
-            log.write_line(stderr.decode())
+            out,err = await run_cmd_async("bash ./scripts/activate_brcm_minimal.sh")
+            log.write_line(out)
+            log.write_line(err)
         
 
         if backend == 'hostapd':
             log.write_line('Running hostapd setup...')
-            proc = await asyncio.create_subprocess_shell(
-                f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {BASEIP}",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
+            out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {BASEIP}")
         elif backend == 'networkmanager':
             log.write_line('Running NetworkManager setup...')
-            proc = await asyncio.create_subprocess_shell(
-                f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {BASEIP} '/24'",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
+            out,err = await run_cmd_async(f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {BASEIP} '/24'")
 
-        stdout, stderr = await proc.communicate()
         log.write_line(stdout.decode())
         log.write_line(stderr.decode())
-
 
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -257,14 +250,9 @@ Restarting ...
         log.write_line('Starting configuration...')
         self.query_one('#config-btn', Button).disabled = True
 
-        proc = await asyncio.create_subprocess_shell(
-            f"bash ./scripts/iot_openwrt_setup.sh {nname} {npass} {BASEIP}",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = await proc.communicate()
-        log.write_line(stdout.decode())
-        log.write_line(stderr.decode())
+        out,err = await run_cmd_async(f"bash ./scripts/iot_openwrt_setup.sh {nname} {npass} {BASEIP}")
+        log.write_line(out)
+        log.write_line(err)
 
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -284,13 +272,8 @@ class APSettings(Screen):
 
 
     async def read_credentials(self) -> None:
-        proc = await asyncio.create_subprocess_shell(
-            "bash ./scripts/read_wifi_creds.sh",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = await proc.communicate()
-        creds = stdout.decode().strip()
+        out,err = await run_cmd_async("bash ./scripts/read_wifi_creds.sh")
+        creds = out.strip()
 
         ssid = '--'
         ip = '--'
@@ -310,6 +293,7 @@ The following Wi-Fi AP credentials can be found on your system:
 | IP address          | {ip}  |
 | Default IP for IoTempower | {BASEIP} |
 | IoTempower activated | {IOTEMPOWER} |
+| Access point running | {AP_RUNNING if AP_RUNNING else 'False'} |
 | Other AP software present on system | {SOFTAP} |
 
             """)
@@ -453,6 +437,7 @@ your Access Point and network settings.
         elif option_id == "vcc":
             self.push_screen('concli')
         elif option_id == "vas":
+            asyncio.create_task(self.check_running_ap())
             self.push_screen('apsettings')
         elif option_id == "vci":
             self.push_screen('wifichipinfo')
@@ -463,17 +448,12 @@ your Access Point and network settings.
     async def update_detected_chip(self) -> None:
         global SYSTEM, SOFTAP, WIFI_CHIP
 
-        proc = await asyncio.create_subprocess_shell(
-            "bash ./scripts/detect_wifi_chip.sh",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = await proc.communicate()
+        out,err = await run_cmd_async("bash ./scripts/detect_wifi_chip.sh")
 
         plfrm = platform.machine() + '-' + platform.platform(aliased=True, terse=True) + '-' + platform.system() + '-' + platform.processor()
         SYSTEM = plfrm
 
-        if stdout and (chip := self.confirm_chip(stdout.decode())):
+        if out and (chip := self.confirm_chip(out)):
             WIFI_CHIP = chip
             result = '\t[+] Your Wi-Fi chip: ' + chip
         else:
@@ -486,34 +466,26 @@ your Access Point and network settings.
     async def check_running_ap(self) -> None:
         global AP_RUNNING
 
-        proc = await asyncio.create_subprocess_shell(
-            "ps -a | grep 'hostapd\\|create_ap\\|networkmanager'",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = await proc.communicate()
-        out = stdout.decode() + stderr.decode()
+        out,err = await run_cmd_async("ps -a | grep 'hostapd\\|create_ap'")
 
         if 'hostapd' in out:
             AP_RUNNING = 'hostapd'
-        if 'nmcli' in out:
-            AP_RUNNING = 'NetworkManager'
+        else:
+            # Check NM service status separately
+            out,err = await run_cmd_async("systemctl status NetworkManager")
+            if 'active (running)' in out:
+                AP_RUNNING = 'NetworkManager'
 
         if AP_RUNNING:
-            update_static(self, 'softap-status', '\n\t[+] An active AP has been detected: ' + AP_RUNNING)
+            update_static(self, 'softap-status', '\t[+] An active AP has been detected: ' + AP_RUNNING)
 
 
     async def check_iotempower(self) -> None:
         global IOTEMPOWER
 
-        proc = await asyncio.create_subprocess_shell(
-            'bash ./scripts/detect_iotempower.sh',
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        stdout, stderr = await proc.communicate()
+        out,err = await run_cmd_async('bash ./scripts/detect_iotempower.sh')
 
-        IOTEMPOWER = stdout.decode().strip() == 'yes'
+        IOTEMPOWER = out.strip() == 'yes'
 
         status = "\t[+] IoTempower is reachable and installed correctly!" if IOTEMPOWER else "\t[-] IoTempower is not activated! Functionality is not available!"
 

@@ -144,7 +144,11 @@ class LocalConfiguration(Screen):
 
 
     def on_mount(self):
-        pass
+        if AP_RUNNING:
+            log.clear()
+            log.write_line('Access point is already running on this system!')
+            self.query_one('#config-btn', Button).disabled = True
+
 
     async def configure_local(self) -> None:
         backend = self.query_one('#ap_backend').pressed_button.id
@@ -381,8 +385,8 @@ your Access Point and network settings.
             """)
 
             yield Static("", id="detected-chip")
-            yield Static("", id="softap-status")
             yield Static("", id="iotemp-status")
+            yield Static("", id="softap-status")
             yield OptionList(
                 Option("Configure Access Point", id="cap"),
                 Option("Configure OpenWRT Router", id="cor"),
@@ -487,10 +491,15 @@ your Access Point and network settings.
             stderr=subprocess.PIPE
         )
         stdout, stderr = await proc.communicate()
-        AP_RUNNING = stdout.decode() + stderr.decode()
+        out = stdout.decode() + stderr.decode()
+
+        if 'hostapd' in out:
+            AP_RUNNING = 'hostapd'
+        if 'nmcli' in out:
+            AP_RUNNING = 'NetworkManager'
 
         if AP_RUNNING:
-            update_static(self, 'softap-status', '\n\t[+] An access point has been detected: ' + AP_RUNNING)
+            update_static(self, 'softap-status', '\n\t[+] An active AP has been detected: ' + AP_RUNNING)
 
 
     async def check_iotempower(self) -> None:

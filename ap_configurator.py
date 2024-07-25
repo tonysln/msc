@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 
 
-from mqtt_alive import *
-
 import asyncio
 from textual import log
 from textual.app import App, ComposeResult
@@ -18,338 +16,9 @@ import platform
 import subprocess
 import sys
 
-
-
-WIFI_CHIP = ''
-WIFI_CHIP_FULL = ''
-SYSTEM = ''
-SOFTAP = '--'
-AP_RUNNING = ''
-IOTEMPOWER = ''
-WDEVICE = 'wlan0' # TODO get from iotempower vars
-BASEIP = '192.168.12.1'
-
-
-def update_static(screen, idd, text, append=False) -> None:
-    """Utility function to update static screen object"""
-    s = screen.query_one(f'#{idd}', Static)
-    newtext = text if not append else s.renderable + text
-    s.update(newtext)
-
-
-def validate_config_params(log, backend, nname, npass, npass2) -> bool:
-    """Validate the given params: SSID and password for an AP"""
-    if not backend or not nname or not npass or len(nname) < 2 or len(nname) > 32 or len(npass) < 8 or len(npass) > 128:
-        log.clear()
-        log.write_line('[!] Make sure your network name is valid and password has at least 8 characters!')
-        return False
-
-    if npass != npass2:
-        log.clear()
-        log.write_line('[!] The passwords do not match!')
-        return False
-
-    return True
-
-
-async def run_cmd_async(cmd):
-    """Run the given command asyncronously and return output"""
-    proc = await asyncio.create_subprocess_shell(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-    stdout, stderr = await proc.communicate()
-    return stdout.decode(),stderr.decode()
-
-
-
-class ConnectedClients(Screen):
-    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Markdown("""
-# Connected Clients
-            """)
-        yield Static(f"""
-            Click on Scan to begin
-            """, id="scanres1")
-        yield Button("Scan", id="scan-btn", classes="buttons")
-
-        yield Footer()
-
-
-    async def run_arp_scan(self, dev):
-        out,err = await run_cmd_async(f"sudo arp-scan --localnet --interface={dev}")
-
-        lines = out.split('\n')
-        start_index = -1
-        end_index = -1
-
-        for index, line in enumerate(lines):
-            if line.startswith('Starting arp-scan'):
-                start_index = index
-            elif line.endswith('packets dropped by kernel'):
-                end_index = index
-                break
-
-        macs = lines[start_index+1:end_index-1] if start_index != -1 and end_index != -1 else []
-        out = {}
-        for m in macs:
-            row = m.split('\t')
-            out[row[0]] = row[1] # IP, MAC
-
-        return out
-
-
-    async def check_connected_clients(self) -> None:
-        global WDEVICE
-
-        out = await self.run_arp_scan(WDEVICE)
-        update_static(self, 'scanres1', f"""
-            Scan result: {out}
-
-            Total clients: {len(out.keys())}
-            """)
-
-
-    def on_mount(self):
-        pass
-
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        asyncio.create_task(self.check_connected_clients())
-
-
-class LocalConfiguration(Screen):
-    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Markdown("""
-# Configure Access Point
-            """)
-
-        yield Static('\tAP software/method/backend:')
-        with RadioSet(id='ap_backend'):
-            yield RadioButton("NetworkManager", value=True, id='networkmanager')
-            yield RadioButton("hostapd", id="hostapd")
-
-        yield Static('\tThe name for the network:')
-        yield Input(placeholder="Network Name", id='ssid')
-        yield Static('\tPassword for the network:')
-        yield Input(placeholder="Password", password=True, id='netpass')
-        yield Static('\tPassword confirmation:')
-        yield Input(placeholder="Password", password=True, id='netpass2')
-
-        yield Static(f'\n\tThe default IP address of {BASEIP} will be used for the network.')
-
-        yield Button("Configure", id="config-btn", classes="buttons")
-        yield Log('\t\n', id="status")
-        
-        yield Footer()
-
-
-    def on_mount(self):
-        if AP_RUNNING:
-            log = self.query_one(Log)
-            log.clear()
-            log.write_line('Access point is already running on this system!')
-            self.query_one('#config-btn', Button).disabled = True
-
-
-    async def configure_local(self) -> None:
-        backend = self.query_one('#ap_backend').pressed_button.id
-        nname = self.query_one('#ssid').value
-        npass = self.query_one('#netpass').value
-        npass2 = self.query_one('#netpass2').value
-
-        log = self.query_one(Log)
-
-        if not validate_config_params(log, backend, nname, npass, npass2):
-            return
-
-        log.clear()
-        log.write_line('Starting configuration...')
-        self.query_one('#config-btn', Button).disabled = True
-        
-        if WIFI_CHIP == 'Broadcom' or True:
-            log.write_line('Attempting to activate minimal firmware for your Wi-Fi chip...')
-
-            out,err = await run_cmd_async("bash ./scripts/activate_brcm_minimal.sh")
-            log.write_line(out)
-            log.write_line(err)
-        
-
-        if backend == 'hostapd':
-            log.write_line('Running hostapd setup...')
-            out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {BASEIP}")
-        elif backend == 'networkmanager':
-            log.write_line('Running NetworkManager setup...')
-            out,err = await run_cmd_async(f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {BASEIP} '/24'")
-
-        log.write_line(stdout.decode())
-        log.write_line(stderr.decode())
-
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        asyncio.create_task(self.configure_local())
-
-
-
-class OpenWRTConfiguration(Screen):
-    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Markdown("""
-# Configure OpenWRT Router
-
-Make sure your router has the following requirements met: ...
-...
-
-Step 2:
-
-- Upload firmware from here ...
-- and/or enable SSH or something
-
-[Connect]
-
-Wait for completion... uploading settings ... updating ... 
-
-Restarting ...
-
-[Test Connection]
-            """)
-
-        yield Static('\tThe name for the network:')
-        yield Input(placeholder="Network Name", id='ssid')
-        yield Static('\tPassword for the network:')
-        yield Input(placeholder="Password", password=True, id='netpass')
-        yield Static('\tPassword confirmation:')
-        yield Input(placeholder="Password", password=True, id='netpass2')
-        yield Button("Configure", id="config-btn", classes="buttons")
-        yield Log('\t\n', id="status")
-
-        yield Footer()
-
-
-    async def configure_openwrt(self) -> None:
-        nname = self.query_one('#ssid').value
-        npass = self.query_one('#netpass').value
-        npass2 = self.query_one('#netpass2').value
-        
-
-        log = self.query_one(Log)
-
-        if not validate_config_params(log, True, nname, npass, npass2):
-            return
-
-        log.clear()
-        log.write_line('Starting configuration...')
-        self.query_one('#config-btn', Button).disabled = True
-
-        out,err = await run_cmd_async(f"bash ./scripts/iot_openwrt_setup.sh {nname} {npass} {BASEIP}")
-        log.write_line(out)
-        log.write_line(err)
-
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        asyncio.create_task(self.configure_openwrt())
-
-
-
-class APSettings(Screen):
-    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Markdown(f"""
-# Access Point Settings
-            """)
-        yield Footer()
-
-
-    async def read_credentials(self) -> None:
-        out,err = await run_cmd_async("bash ./scripts/read_wifi_creds.sh")
-        creds = out.strip()
-
-        ssid = '--'
-        ip = '--'
-        if len(creds) > 2 and ',' in creds:
-            cl = creds.split(',')
-            ssid = cl[0].strip()
-            ip = cl[2].strip()
-        
-        self.query_one(Markdown).update(f"""
-# Access Point Settings
-
-The following Wi-Fi AP credentials can be found on your system:
-
-| Setting      | Value |
-| ----------- | ----------- |
-| Network name (SSID) | {ssid} |
-| IP address          | {ip}  |
-| Default IP for IoTempower | {BASEIP} |
-| IoTempower activated | {IOTEMPOWER} |
-| Access point running | {AP_RUNNING if AP_RUNNING else 'False'} |
-| Other AP software present on system | {SOFTAP} |
-
-            """)
-
-
-    def on_mount(self) -> None:
-        asyncio.create_task(self.read_credentials())
-
-
-
-class WiFiChipInfo(Screen):
-    BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Markdown(f"""
-# Wi-Fi Chip Information
-
-Your Wi-Fi chip manufacturer: **{WIFI_CHIP}**
-
-Type of drivers you are running, firmware? {WIFI_CHIP_FULL}
-
-General system info: **{SYSTEM}**
-
----
-
-It appears that you have an Intel Wi-Fi chip on your system with an unknown upper maximum limit on connected clients ...
-
-It appears that you have an Intel Wi-Fi chip on your system with a known upper client limit of **11** devices, which means that no more than 11 clients can be connected to your computer at the same time! ...
-
-It appears that you have a Broadcom Wi-Fi chip with a potential client limit of only **8**, which means that no more than  clients can be connected ... A minimal firmare version is available, which might increase the client limit to **20**... 
-            """)
-
-        yield Footer()
-
-
-    def on_mount(self) -> None:
-        pass
-
-
-class QuitScreen(Screen):
-    """Screen with a dialog to quit."""
-
-    def compose(self) -> ComposeResult:
-        yield Grid(
-            Label("Please install and activate IoTempower before using this app!", id="question"),
-            Button("Quit", variant="error", id="quit"),
-            Button("Cancel", variant="primary", id="cancel"),
-            id="dialog",
-        )
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "quit":
-            self.app.exit()
-        else:
-            self.app.pop_screen()
+import config
+from screens import *
+from utils import *
 
 
 
@@ -398,18 +67,16 @@ your Access Point and network settings.
 
 
     def confirm_chip(self, detected) -> str:
-        global SOFTAP, WIFI_CHIP_FULL, SYSTEM
-
-        WIFI_CHIP_FULL = detected
+        config.WIFI_CHIP_FULL = detected
         detected = detected.lower()
 
         if 'raspberry' in detected:
-            SYSTEM += '-RPi' # todo
+            config.SYSTEM += '-RPi' # todo
 
         if 'netman_available' in detected:
-            SOFTAP = 'networkmanager'
+            config.SOFTAP = 'networkmanager'
         if 'hostapd_available' in detected:
-            SOFTAP = 'hostapd'
+            config.SOFTAP = 'hostapd'
 
         if any(x in detected for x in ['brcm', 'broadcom', 'bcm']):
             return 'Broadcom'
@@ -446,15 +113,13 @@ your Access Point and network settings.
 
 
     async def update_detected_chip(self) -> None:
-        global SYSTEM, SOFTAP, WIFI_CHIP
-
         out,err = await run_cmd_async("bash ./scripts/detect_wifi_chip.sh")
 
         plfrm = platform.machine() + '-' + platform.platform(aliased=True, terse=True) + '-' + platform.system() + '-' + platform.processor()
-        SYSTEM = plfrm
+        config.SYSTEM = plfrm
 
         if out and (chip := self.confirm_chip(out)):
-            WIFI_CHIP = chip
+            config.WIFI_CHIP = chip
             result = '\t[+] Your Wi-Fi chip: ' + chip
         else:
             result = '\t[!] Unable to detect your Wi-Fi chip.'
@@ -464,39 +129,31 @@ your Access Point and network settings.
 
 
     async def check_running_ap(self) -> None:
-        global AP_RUNNING
-
         out,err = await run_cmd_async("ps -a | grep 'hostapd\\|create_ap'")
 
         if 'hostapd' in out:
-            AP_RUNNING = 'hostapd'
+            config.AP_RUNNING = 'hostapd'
         else:
             # Check NM service status separately
             out,err = await run_cmd_async("systemctl status NetworkManager")
             if 'active (running)' in out:
-                AP_RUNNING = 'NetworkManager'
+                config.AP_RUNNING = 'NetworkManager'
 
-        if AP_RUNNING:
-            update_static(self, 'softap-status', '\t[+] An active AP has been detected: ' + AP_RUNNING)
+        if config.AP_RUNNING:
+            update_static(self, 'softap-status', '\t[+] An active AP has been detected: ' + config.AP_RUNNING)
 
 
     async def check_iotempower(self) -> None:
-        global IOTEMPOWER
-
         out,err = await run_cmd_async('bash ./scripts/detect_iotempower.sh')
 
-        IOTEMPOWER = out.strip() == 'yes'
+        config.IOTEMPOWER = out.strip() == 'yes'
 
-        status = "\t[+] IoTempower is reachable and installed correctly!" if IOTEMPOWER else "\t[-] IoTempower is not activated! Functionality is not available!"
+        status = "\t[+] IoTempower is reachable and installed correctly!" if config.IOTEMPOWER else "\t[-] IoTempower is not activated! Functionality is not available!"
 
         update_static(self, 'iotemp-status', status)
 
-        if not IOTEMPOWER:
+        if not config.IOTEMPOWER:
             self.push_screen(QuitScreen())
-
-
-    def activate_brcm_minimal(self) -> None:
-        pass
 
 
     def action_quit(self) -> None:

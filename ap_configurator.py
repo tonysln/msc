@@ -144,8 +144,8 @@ your Access Point and network settings.
             config.AP_RUNNING = 'hostapd'
         else:
             # Check NM service status separately
-            out,err = await run_cmd_async("systemctl status NetworkManager")
-            if 'active (running)' in out:
+            out,err = await run_cmd_async("nmcli con show --active | wc -l")
+            if not err and out and int(out.strip()) > 2:
                 config.AP_RUNNING = 'NetworkManager'
 
         if config.AP_RUNNING:

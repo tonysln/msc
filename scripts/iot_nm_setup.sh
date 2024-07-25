@@ -10,6 +10,12 @@ npass=$2
 baseip=$3
 netmask=$4
 
+
+# Prepare for NM use after (presumably) hostapd
+sudo systemctl disable wpa_supplicant.service
+sudo systemctl disable wpa_supplicant@wlan0.service
+
+
 # Call the iotempower script from bin/,
 # iot env must be activated!
 echo $(accesspoint-nm create --ssid $nname --password $npass --ip $baseip --netmask $netmask)

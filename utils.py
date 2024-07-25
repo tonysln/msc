@@ -3,6 +3,7 @@
 import asyncio
 from textual.widgets import Static
 import subprocess
+import re
 
 
 def update_static(screen, idd, text, append=False) -> None:
@@ -31,7 +32,7 @@ def validate_config_params(log, backend, nname, npass, npass2) -> bool:
 
 async def run_cmd_async(cmd):
     """Run the given command asynchronously and return output"""
-    
+
     proc = await asyncio.create_subprocess_shell(
         cmd,
         stdout=subprocess.PIPE,
@@ -39,3 +40,11 @@ async def run_cmd_async(cmd):
     )
     stdout, stderr = await proc.communicate()
     return stdout.decode(), stderr.decode()
+
+
+def extract_keywords(strng):
+	"""Given a string, extract keywords in the form of key:value;"""
+
+	pattern = r'(\w+):([^;]*)'
+	matches = re.findall(pattern, strng)
+	return matches

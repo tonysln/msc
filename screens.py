@@ -7,7 +7,7 @@ from textual.containers import Grid
 from textual.widgets import Button, Header, Footer, Static, Input, RadioButton, RadioSet, Log, Markdown, Label
 
 import config
-from utils import update_static, validate_config_params, run_cmd_async
+from utils import update_static, validate_config_params, run_cmd_async, extract_keywords
 
 
 
@@ -268,6 +268,8 @@ class WiFiChipInfo(Screen):
         yield Footer()
 
     async def load_info(self) -> None:
+        kwords = extract_keywords(config.WIFI_CHIP_FULL)
+
         chip_compat_warning = ''
 
         if config.WIFI_CHIP == 'Broadcom':
@@ -280,7 +282,7 @@ class WiFiChipInfo(Screen):
 
 Your Wi-Fi chip manufacturer: **{config.WIFI_CHIP}**
 
-Type of drivers you are running, firmware? {config.WIFI_CHIP_FULL}
+Type of drivers you are running, firmware? {' '.join(kwords)}
 
 General system info string: **{config.SYSTEM}**
 

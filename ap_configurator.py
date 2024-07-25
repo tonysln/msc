@@ -17,8 +17,8 @@ import subprocess
 import sys
 
 import config
-from screens import *
-from utils import *
+from utils import update_static, validate_config_params, run_cmd_async
+from screens import ConnectedClients, LocalConfiguration, OpenWRTConfiguration, APSettings, WiFiChipInfo, QuitScreen
 
 
 

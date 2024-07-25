@@ -7,7 +7,7 @@ from textual.containers import Grid
 from textual.widgets import Button, Header, Footer, Static, Input, RadioButton, RadioSet, Log, Markdown, Label
 
 import config
-from utils import *
+from utils import update_static, validate_config_params, run_cmd_async
 
 
 

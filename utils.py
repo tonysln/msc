@@ -2,7 +2,7 @@
 
 import asyncio
 from textual.widgets import Static
-
+import subprocess
 
 
 def update_static(screen, idd, text, append=False) -> None:

@@ -13,13 +13,22 @@ from textual.widgets import Markdown
 from textual.screen import Screen
 from textual import events
 import platform
-import subprocess
 import sys
 
 import config
 from utils import update_static, validate_config_params, run_cmd_async
 from screens import ConnectedClients, LocalConfiguration, OpenWRTConfiguration, APSettings, WiFiChipInfo, QuitScreen
 
+
+import logging
+
+# Configure logging
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+#                     handlers=[
+#                         logging.FileHandler("ap_configurator.log"),
+#                         logging.StreamHandler()
+#                     ])
 
 
 class APConfigurator(App):

@@ -69,6 +69,7 @@ class ConnectedClients(Screen):
         asyncio.create_task(self.check_connected_clients())
 
 
+
 class LocalConfiguration(Screen):
     BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
 
@@ -262,27 +263,37 @@ class WiFiChipInfo(Screen):
         yield Header()
         yield Markdown(f"""
 # Wi-Fi Chip Information
+            """)
+
+        yield Footer()
+
+    async def load_info(self) -> None:
+        chip_compat_warning = ''
+
+        if config.WIFI_CHIP == 'Broadcom':
+            chip_compat_warning = 'It appears that you have a Broadcom Wi-Fi chip with a potential client limit of only **8**, which means that no more than  clients can be connected ... A minimal firmare version is available, which might increase the client limit to **20**'
+        elif config.WIFI_CHIP == 'Intel':
+            chip_compat_warning = 'It appears that you have an Intel Wi-Fi chip on your system with a known upper client limit of **11** devices, which means that no more than 11 clients can be connected to your computer at the same time! ...'
+
+        self.query_one(Markdown).update(f"""
+# Wi-Fi Chip Information
 
 Your Wi-Fi chip manufacturer: **{config.WIFI_CHIP}**
 
 Type of drivers you are running, firmware? {config.WIFI_CHIP_FULL}
 
-General system info: **{config.SYSTEM}**
+General system info string: **{config.SYSTEM}**
 
 ---
 
-It appears that you have an Intel Wi-Fi chip on your system with an unknown upper maximum limit on connected clients ...
+{chip_compat_warning}
 
-It appears that you have an Intel Wi-Fi chip on your system with a known upper client limit of **11** devices, which means that no more than 11 clients can be connected to your computer at the same time! ...
-
-It appears that you have a Broadcom Wi-Fi chip with a potential client limit of only **8**, which means that no more than  clients can be connected ... A minimal firmare version is available, which might increase the client limit to **20**... 
-            """)
-
-        yield Footer()
+""")
 
 
     def on_mount(self) -> None:
-        pass
+        asyncio.create_task(self.load_info())
+
 
 
 class QuitScreen(Screen):

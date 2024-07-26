@@ -51,7 +51,7 @@ awk_output=$(echo "$parsed_output" | awk '
   NR==6 { exit }')
 
 lshw_config=$(lshw -C network | grep -i configuration)
-echo "lshw_config:$lshw_config"
+echo ";lshw_config:$lshw_config;"
 
 # Existing AP software detection
 hostapd "--version"
@@ -77,7 +77,7 @@ subsystem=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /Sub
 pci=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /PCI bridge:/){print $0;f=0}}' | sed 's/PCI bridge: //')
 kernel_driver=$(echo "$lspci_output" | awk '/Network controller/{f=1} f{if($0 ~ /Kernel driver in use:/){print $0;f=0}}' | sed 's/Kernel driver in use: //')
 
-echo "controller_subsystem:$subsystem;"
+echo ";controller_subsystem:$subsystem;"
 echo "pci_controller:$pci;"
 echo "kernel_driver_in_use:$kernel_driver;"
 

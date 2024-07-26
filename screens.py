@@ -154,21 +154,16 @@ class OpenWRTConfiguration(Screen):
         yield Markdown("""
 # Configure OpenWRT Router
 
-Make sure your router has the following requirements met: ...
-...
+Make sure your router has the following requirements met:
 
-Step 2:
+- OpenWRT version 21 and newer supported
+- At least 64MB of memory available
+- SSH available
 
-- Upload firmware from here ...
-- and/or enable SSH or something
+Before starting, please do the following steps:
 
-[Connect]
-
-Wait for completion... uploading settings ... updating ... 
-
-Restarting ...
-
-[Test Connection]
+- Connect the router to internet
+- Connect this device to the router over ethernet
             """)
 
         yield Static('\tThe name for the network:')
@@ -269,24 +264,42 @@ class WiFiChipInfo(Screen):
 
     async def load_info(self) -> None:
         kwords = extract_keywords(config.WIFI_CHIP_FULL)
+        kword_filtered = ''
+        for kw in kwords:
+            key = kw[0].strip()
+            value = kw[1].strip()
+            if value:
+                if key == 'controller_subsystem' or key == 'pci_controller':
+                    value = '| Full device name: |' + value + '|'
+
+                elif key == 'kernel_driver_in_use':
+                    value = '| Driver in use: |' + value + '|'
+
+                elif key == 'cpuver':
+                    value = '| System model information: |' + value + '|'
+
+                else:
+                    continue
+
+                kword_filtered += value + '\n'
+
 
         chip_compat_warning = ''
 
         if config.WIFI_CHIP == 'Broadcom':
-            chip_compat_warning = 'It appears that you have a Broadcom Wi-Fi chip with a potential client limit of only **8**, which means that no more than  clients can be connected ... A minimal firmare version is available, which might increase the client limit to **20**'
+            chip_compat_warning = '## Notice\n\nIt appears that you have a Broadcom Wi-Fi chip with a potential limit of only **8** active clients, which means that any clients you attempt to connect after the 8th one will silently fail! A minimal firmare version is available, which might increase the client limit to **20**. The minimal firmware is activated automatically when creating an AP using this app.'
         elif config.WIFI_CHIP == 'Intel':
-            chip_compat_warning = 'It appears that you have an Intel Wi-Fi chip on your system with a known upper client limit of **11** devices, which means that no more than 11 clients can be connected to your computer at the same time! ...'
+            chip_compat_warning = '## Notice\n\nIt appears that you have an Intel Wi-Fi chip on your system, some of which have a known upper client limit of **11** devices, which means that no more than 11 clients can be connected to your computer at the same time! Unfortunately, there is no simple workaround to this issue, so just keep this in mind.\n\nUsing an external OpenWRT-based Wi-Fi router is recommended. '
+
 
         self.query_one(Markdown).update(f"""
 # Wi-Fi Chip Information
 
-Your Wi-Fi chip manufacturer: **{config.WIFI_CHIP}**
+| Setting      | Value |
+| ----------- | ----------- |
+| Chip manufaturer | {config.WIFI_CHIP} |
+{kword_filtered}| System info | {config.SYSTEM} |
 
-Type of drivers you are running, firmware? {' '.join(kwords)}
-
-General system info string: **{config.SYSTEM}**
-
----
 
 {chip_compat_warning}
 

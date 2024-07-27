@@ -18,15 +18,15 @@ class ConnectedClients(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Markdown("""
+        with VerticalScroll():
+            yield Markdown("""
 # Connected Clients
 
 This tool will detect all clients who are connected to the active AP and are discoverable over MQTT.
-            """)
-        yield Markdown(f"""
-            """, id="scanres")
-        yield Button("Scan", id="scan-btn", classes="buttons")
-
+                """)
+            yield Markdown(f"""
+                """, id="scanres")
+            yield Button("Scan", id="scan-btn", classes="buttons")
         yield Footer()
 
 
@@ -101,27 +101,26 @@ class LocalConfiguration(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Markdown("""
+
+        with VerticalScroll():
+            yield Markdown("""
 # Configure Access Point
-            """)
+                """)
 
-        yield Static('\tSoftware:')
-        with RadioSet(id='ap_backend'):
-            yield RadioButton("NetworkManager", value=True, id='networkmanager')
-            yield RadioButton("hostapd", id="hostapd")
+            yield Static('\tSoftware:')
+            with RadioSet(id='ap_backend'):
+                yield RadioButton("NetworkManager", value=True, id='networkmanager')
+                yield RadioButton("hostapd", id="hostapd")
 
-        yield Static('\tThe name for the network:')
-        yield Input(placeholder="Network Name", id='ssid')
-        yield Static('\tPassword for the network:')
-        yield Input(placeholder="Password", password=True, id='netpass')
-        yield Static('\tPassword confirmation:')
-        yield Input(placeholder="Password", password=True, id='netpass2')
-
-        yield Static(f'\n\tThe default IP address of {config.BASEIP} will be used for the network.')
-
-        yield Button("Configure", id="config-btn", classes="buttons")
-        yield Log('\t\n', id="status", auto_scroll=True)
-        
+            yield Static('\tThe name for the network:')
+            yield Input(placeholder="Network Name", id='ssid')
+            yield Static('\tPassword for the network:')
+            yield Input(placeholder="Password", password=True, id='netpass')
+            yield Static('\tPassword confirmation:')
+            yield Input(placeholder="Password", password=True, id='netpass2')
+            yield Static(f'\n\tThe default IP address of {config.BASEIP} will be used for the network.')
+            yield Button("Configure", id="config-btn", classes="buttons")
+            yield Log('\t\n', id="status", auto_scroll=True)
         yield Footer()
 
 
@@ -164,7 +163,7 @@ class LocalConfiguration(Screen):
             out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {config.BASEIP}")
         elif backend == 'networkmanager':
             log.write_line('Running NetworkManager setup...')
-            log.write_line('NB! If you previously used hostapd on this system, there might be some steps you need to manually complete. Contact your instructor or administrator in case of failure.')
+            log.write_line('NB! If you previously used hostapd on this system, there might be some steps you need to manually complete.\nContact your instructor or administrator in case of failure.')
             out,err = await run_cmd_async(f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {config.BASEIP} '/24'")
 
         log.write_line(out)
@@ -181,7 +180,9 @@ class OpenWRTConfiguration(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Markdown("""
+
+        with VerticalScroll():
+            yield Markdown("""
 # Configure OpenWRT Router
 
 Make sure your router has the following requirements met:
@@ -196,15 +197,14 @@ Before starting, please do the following steps:
 - Connect this device to the router over ethernet
             """)
 
-        yield Static('\tThe name for the network:')
-        yield Input(placeholder="Network Name", id='ssid')
-        yield Static('\tPassword for the network:')
-        yield Input(placeholder="Password", password=True, id='netpass')
-        yield Static('\tPassword confirmation:')
-        yield Input(placeholder="Password", password=True, id='netpass2')
-        yield Button("Configure", id="config-btn", classes="buttons")
-        yield Log('\t\n', id="status")
-
+            yield Static('\tThe name for the network:')
+            yield Input(placeholder="Network Name", id='ssid')
+            yield Static('\tPassword for the network:')
+            yield Input(placeholder="Password", password=True, id='netpass')
+            yield Static('\tPassword confirmation:')
+            yield Input(placeholder="Password", password=True, id='netpass2')
+            yield Button("Configure", id="config-btn", classes="buttons")
+            yield Log('\t\n', id="status")
         yield Footer()
 
 
@@ -238,7 +238,8 @@ class APSettings(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Markdown(f"""
+        with VerticalScroll():
+            yield Markdown(f"""
 # Access Point Settings
             """)
         yield Footer()
@@ -286,7 +287,8 @@ class WiFiChipInfo(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Markdown(f"""
+        with VerticalScroll():
+            yield Markdown(f"""
 # Wi-Fi Chip Information
             """)
 

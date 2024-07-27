@@ -74,9 +74,6 @@ your Access Point and network settings.
         config.WIFI_CHIP_FULL = detected
         detected = detected.lower()
 
-        if 'raspberry' in detected:
-            config.SYSTEM += '-RPi' # todo
-
         if 'netman_available' in detected:
             config.SOFTAP = 'networkmanager'
         if 'hostapd_available' in detected:
@@ -97,9 +94,9 @@ your Access Point and network settings.
 
 
     async def handle_option(self, option_id: str) -> None:
-        # if not IOTEMPOWER and not option_id == "vq":
-        #     self.push_screen(QuitScreen())
-        #     return
+        if not IOTEMPOWER and not option_id == "vq":
+            self.push_screen(QuitScreen())
+            return
 
         if option_id == "cap":
             self.push_screen('localconf')

@@ -79,7 +79,9 @@ This tool will detect all clients who are connected to the active AP and are dis
 
         self.query_one('#scanres', Markdown).update(f"""
 | Name      | IP | MAC |
-| ----- | ----- | ----- | {out_formatted}
+| ----- | ----- | ----- | 
+{out_formatted}
+
 
 Total clients: {len(out.keys())}
             """)
@@ -103,7 +105,7 @@ class LocalConfiguration(Screen):
 # Configure Access Point
             """)
 
-        yield Static('\tAP software/method/backend:')
+        yield Static('\tSoftware:')
         with RadioSet(id='ap_backend'):
             yield RadioButton("NetworkManager", value=True, id='networkmanager')
             yield RadioButton("hostapd", id="hostapd")
@@ -162,6 +164,7 @@ class LocalConfiguration(Screen):
             out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {config.BASEIP}")
         elif backend == 'networkmanager':
             log.write_line('Running NetworkManager setup...')
+            log.write_line('NB! If you previously used hostapd on this system, there might be some steps you need to manually complete. Contact your instructor or administrator in case of failure.')
             out,err = await run_cmd_async(f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {config.BASEIP} '/24'")
 
         log.write_line(out)

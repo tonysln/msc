@@ -97,6 +97,9 @@ Total clients: {len(out.keys())}
 
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.query_one('#scanres', Markdown).update("""
+Running scan...
+""")
         asyncio.create_task(self.check_connected_clients())
 
 

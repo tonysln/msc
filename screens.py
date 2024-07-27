@@ -52,7 +52,7 @@ class ConnectedClients(Screen):
         return out
 
 
-    async def run_get_ips(dev):
+    async def run_get_ips(self, dev):
         out,err = run_cmd_async('get_ips')
         lines = out.split('\n')
 

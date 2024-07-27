@@ -75,7 +75,7 @@ This tool will detect all clients who are connected to the active AP and are dis
         out = await self.run_get_ips(config.WDEVICE)
         out_formatted = ''
         for k,v in out.items():
-            out_formatted += f'| {k} | {v[0]} | {v[1]}\n'
+            out_formatted += f'| {k} | {v[0]} | {v[1]} |\n'
 
         self.query_one('#scanres', Markdown).update(f"""
 | Name      | IP | MAC |

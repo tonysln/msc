@@ -1,3 +1,3 @@
 #!/bin/bash
 
-echo $(mqtt_broker)
+mqtt_broker

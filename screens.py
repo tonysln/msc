@@ -150,18 +150,18 @@ class LocalConfiguration(Screen):
             log.write_line(err)
         
 
+        log.write_line('Starting MQTT server...')
+        out,err = await run_cmd_async(f"bash ./scripts/iot_mqtt_start.sh")
+        log.write_line(out)
+        log.write_line(err)
+
+
         if backend == 'hostapd':
             log.write_line('Running hostapd setup...')
             out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {config.BASEIP}")
         elif backend == 'networkmanager':
             log.write_line('Running NetworkManager setup...')
             out,err = await run_cmd_async(f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {config.BASEIP} '/24'")
-
-        log.write_line(out)
-        log.write_line(err)
-
-        log.write_line('Starting MQTT server...')
-        out,err = await run_cmd_async(f"bash ./scripts/iot_mqtt_start.sh")
 
         log.write_line(out)
         log.write_line(err)

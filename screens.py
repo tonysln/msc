@@ -53,7 +53,7 @@ class ConnectedClients(Screen):
 
 
     async def run_get_ips(self, dev):
-        out,err = run_cmd_async('get_ips')
+        out,err = await run_cmd_async('get_ips')
         lines = out.split('\n')
 
         macs = await self.run_arp_scan(dev)
@@ -157,8 +157,14 @@ class LocalConfiguration(Screen):
             log.write_line('Running NetworkManager setup...')
             out,err = await run_cmd_async(f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {config.BASEIP} '/24'")
 
-        log.write_line(stdout.decode())
-        log.write_line(stderr.decode())
+        log.write_line(out)
+        log.write_line(err)
+
+        log.write_line('Starting MQTT server...')
+        out,err = await run_cmd_async(f"bash ./scripts/iot_mqtt_start.sh")
+
+        log.write_line(out)
+        log.write_line(err)
 
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

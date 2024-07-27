@@ -30,7 +30,7 @@ def validate_config_params(log, backend, nname, npass, npass2) -> bool:
     return True
 
 
-async def run_cmd_async(cmd):
+async def run_cmd_async(cmd, bg=False):
     """Run the given command asynchronously and return output"""
 
     proc = await asyncio.create_subprocess_shell(
@@ -38,8 +38,13 @@ async def run_cmd_async(cmd):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    stdout, stderr = await proc.communicate()
-    return stdout.decode(), stderr.decode()
+
+    if not bg:
+    	stdout, stderr = await proc.communicate()
+    	return stdout.decode(), stderr.decode()
+    else:
+    	proc.communicate()
+    	return None
 
 
 def extract_keywords(strng):

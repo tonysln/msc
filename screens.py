@@ -151,7 +151,7 @@ class LocalConfiguration(Screen):
         
 
         log.write_line('Starting MQTT server...')
-        out,err = await run_cmd_async(f"bash ./scripts/iot_mqtt_start.sh")
+        await run_cmd_async(f"bash ./scripts/iot_mqtt_start.sh", bg=True)
 
         if backend == 'hostapd':
             log.write_line('Running hostapd setup...')

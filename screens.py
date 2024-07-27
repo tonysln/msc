@@ -20,10 +20,11 @@ class ConnectedClients(Screen):
         yield Header()
         yield Markdown("""
 # Connected Clients
+
+This tool will detect all clients who are connected to the active AP and are discoverable over MQTT.
             """)
-        yield Static(f"""
-            Click on Scan to begin
-            """, id="scanres1")
+        yield Markdown(f"""
+            """, id="scanres")
         yield Button("Scan", id="scan-btn", classes="buttons")
 
         yield Footer()
@@ -66,18 +67,21 @@ class ConnectedClients(Screen):
             name = line[0]
             if ip in macs.keys():
                 out[name] = [ip, macs[ip]]
-            else:
-                print('IP mismatch:', ip)
 
         return out
 
 
     async def check_connected_clients(self) -> None:
         out = await self.run_get_ips(config.WDEVICE)
-        update_static(self, 'scanres1', f"""
-            Scan result: {out}
+        out_formatted = ''
+        for k,v in out.items():
+            out_formatted += f'| {k} | {v[0]} | {v[1]}\n'
 
-            Total clients: {len(out.keys())}
+        self.query_one('#scanres', Markdown).update(f"""
+| Name      | IP | MAC |
+| ----- | ----- | ----- | {out_formatted}
+
+Total clients: {len(out.keys())}
             """)
 
 

@@ -12,6 +12,7 @@
 
 Input, RadioSet, Log, Markdown {
     margin: 1 12;
+    overflow-x: hidden;
 }
 
 

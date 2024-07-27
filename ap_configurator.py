@@ -152,7 +152,7 @@ your Access Point and network settings.
 
         config.IOTEMPOWER = out.strip() == 'yes'
 
-        status = "\t[+] IoTempower is reachable and installed correctly!" if config.IOTEMPOWER else "\t[-] IoTempower is not activated! Functionality is not available!"
+        status = "\t[+] IoTempower is installed correctly and activated" if config.IOTEMPOWER else "\t[-] IoTempower is not activated! Functionality is not available!"
 
         update_static(self, 'iotemp-status', status)
 

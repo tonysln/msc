@@ -120,7 +120,7 @@ class LocalConfiguration(Screen):
         yield Static(f'\n\tThe default IP address of {config.BASEIP} will be used for the network.')
 
         yield Button("Configure", id="config-btn", classes="buttons")
-        yield Log('\t\n', id="status")
+        yield Log('\t\n', id="status", auto_scroll=True)
         
         yield Footer()
 

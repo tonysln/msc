@@ -9,7 +9,7 @@ filter_msg() {
   # Arg $1 - Provided msg
 
   # Common driver identifiers that we are interested in
-  local filter_str="ath9k|ath10k|ath11k|ath12k|broadcom|realtek|intel|mediatek|brcm|bcm|b43|mt76|iwlwifi|rtl|brcmfmac|brcmsmac"
+  local filter_str="ath9k|ath10k|ath11k|ath12k|broadcom|realtek|intel|mediatek|brcm|bcm|b43|mt76|mt79|rt35|rt53|iwlwifi|rtl|brcmfmac|brcmsmac"
   
   # Filter the given message for any of the keywords,
   # save the ones present and discard duplicates

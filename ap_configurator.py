@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 
-import asyncio
+# Textual
 from textual import log
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll, Grid
@@ -12,22 +12,26 @@ from textual.message import Message
 from textual.widgets import Markdown
 from textual.screen import Screen
 from textual import events
+
+# Python libraries
+import asyncio
 import platform
 import sys
 
+# Modules
 import config
 from utils import update_static, validate_config_params, run_cmd_async
 from screens import ConnectedClients, LocalConfiguration, OpenWRTConfiguration, APSettings, WiFiChipInfo, QuitScreen
 
 
-import logging
-
-#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#                    handlers=[logging.FileHandler("ap_configurator.log"),logging.StreamHandler()])
-
 
 class APConfigurator(App):
-    """Access point configuration app"""
+    """
+    Access point configuration app
+    
+    This is the main UI class, containing the main menu screen 
+    and references to all other screens and functionality.
+    """
 
     CSS_PATH = "style.tcss"
     BINDINGS = [("q", "quit", "Quit")]
@@ -71,6 +75,9 @@ your Access Point and network settings.
 
 
     def confirm_chip(self, detected) -> str:
+        """Detect chip manufacturer and active AP software from long info string, 
+        as returned by scripts/detect_wifi_chip.sh"""
+
         config.WIFI_CHIP_FULL = detected
         detected = detected.lower()
 
@@ -85,6 +92,10 @@ your Access Point and network settings.
             return 'Intel'
         if any(x in detected for x in ['rtl', 'realtek']):
             return 'Realtek'
+        if any(x in detected for x in ['ath9k', 'ath10k', 'ath11k']):
+            return 'Atheros'
+        if any(x in detected for x in ['mediatek', 'mt79', 'rt53', 'rt35', 'mt76']):
+            return 'MediaTek'
 
         return ''
 
@@ -94,7 +105,9 @@ your Access Point and network settings.
 
 
     async def handle_option(self, option_id: str) -> None:
-        if not IOTEMPOWER and not option_id == "vq":
+        # Don't allow accessing any of the screens if IoTempower is not activated,
+        # most of the scripts will not work
+        if not config.IOTEMPOWER and not option_id == "vq":
             self.push_screen(QuitScreen())
             return
 
@@ -114,8 +127,10 @@ your Access Point and network settings.
 
 
     async def update_detected_chip(self) -> None:
+        # Run the main chip info detection script
         out,err = await run_cmd_async("bash ./scripts/detect_wifi_chip.sh")
 
+        # Gather separate information on the system
         plfrm = platform.machine() + '-' + platform.platform(aliased=True, terse=True) + '-' + platform.system() + '-' + platform.processor()
         config.SYSTEM = plfrm
 
@@ -128,8 +143,8 @@ your Access Point and network settings.
         update_static(self, 'detected-chip', result)
 
 
-
     async def check_running_ap(self) -> None:
+        # Check whether hostapd has been activated already
         out,err = await run_cmd_async("ps -a | grep 'hostapd\\|create_ap'")
 
         if 'hostapd' in out:
@@ -145,6 +160,7 @@ your Access Point and network settings.
 
 
     async def check_iotempower(self) -> None:
+        # Check whether IoTempower environment is activated
         out,err = await run_cmd_async('bash ./scripts/detect_iotempower.sh')
 
         config.IOTEMPOWER = out.strip() == 'yes'

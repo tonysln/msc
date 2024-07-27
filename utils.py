@@ -7,7 +7,11 @@ import re
 
 
 def update_static(screen, idd, text, append=False) -> None:
-    """Utility function to update static screen object"""
+    """
+    Utility function to update static screen object
+	
+	Used to update text on screen (once) after receiving it from an async function.
+    """
 
     s = screen.query_one(f'#{idd}', Static)
     newtext = text if not append else s.renderable + text
@@ -39,6 +43,7 @@ async def run_cmd_async(cmd, bg=False):
         stderr=subprocess.PIPE
     )
 
+    # If bg=True, launch silently in background
     if not bg:
     	stdout, stderr = await proc.communicate()
     	return stdout.decode(), stderr.decode()

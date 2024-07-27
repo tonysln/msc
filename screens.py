@@ -1,11 +1,16 @@
 #!/usr/bin/python3
 
-import asyncio
+
+# Textual
 from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.containers import Grid
 from textual.widgets import Button, Header, Footer, Static, Input, RadioButton, RadioSet, Log, Markdown, Label
 
+# Python libraries
+import asyncio
+
+# Modules
 import config
 from utils import update_static, validate_config_params, run_cmd_async, extract_keywords
 
@@ -96,7 +101,17 @@ Total clients: {len(out.keys())}
 
 
 
+
 class LocalConfiguration(Screen):
+    """
+    Local AP configuration using hostapd or NetworkManager
+
+    User input is collected for the SSID and password, 
+    and a live log is shown to document the process.
+
+    Using IoTempower scripts: accesspoint and accesspoint-nm
+    """
+
     BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
 
     def compose(self) -> ComposeResult:
@@ -125,6 +140,7 @@ class LocalConfiguration(Screen):
 
 
     def on_mount(self):
+        # Disable creating a new AP if one is running already
         if config.AP_RUNNING:
             log = self.query_one(Log)
             log.clear()
@@ -133,6 +149,7 @@ class LocalConfiguration(Screen):
 
 
     async def configure_local(self) -> None:
+        # Collect user input
         backend = self.query_one('#ap_backend').pressed_button.id
         nname = self.query_one('#ssid').value
         npass = self.query_one('#netpass').value
@@ -140,6 +157,7 @@ class LocalConfiguration(Screen):
 
         log = self.query_one(Log)
 
+        # Validate
         if not validate_config_params(log, backend, nname, npass, npass2):
             return
 
@@ -147,6 +165,7 @@ class LocalConfiguration(Screen):
         log.write_line('Starting configuration...')
         self.query_one('#config-btn', Button).disabled = True
         
+        # Apply broadcom minimal firmware patch
         if config.WIFI_CHIP == 'Broadcom' or True:
             log.write_line('Attempting to activate minimal firmware for your Wi-Fi chip...')
 
@@ -155,9 +174,11 @@ class LocalConfiguration(Screen):
             log.write_line(err)
         
 
+        # Launch MQTT right away
         log.write_line('Starting MQTT server...')
         await run_cmd_async(f"bash ./scripts/iot_mqtt_start.sh", bg=True)
 
+        # Start AP configuration
         if backend == 'hostapd':
             log.write_line('Running hostapd setup...')
             out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {config.BASEIP}")
@@ -175,7 +196,17 @@ class LocalConfiguration(Screen):
 
 
 
+
 class OpenWRTConfiguration(Screen):
+    """
+    OpenWRT router automatic configuration
+
+    User input is collected for the SSID and password, 
+    and a live log is shown to document the process.
+
+    Using IoTempower scripts: wifi_openwrt_uci, setup_systemconf
+    """
+
     BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
 
     def compose(self) -> ComposeResult:
@@ -209,6 +240,7 @@ Before starting, please do the following steps:
 
 
     async def configure_openwrt(self) -> None:
+        # Collect user input
         nname = self.query_one('#ssid').value
         npass = self.query_one('#netpass').value
         npass2 = self.query_one('#netpass2').value
@@ -233,7 +265,15 @@ Before starting, please do the following steps:
 
 
 
+
 class APSettings(Screen):
+    """
+    Display AP configuration
+
+    Show the pre-configured credentials of an AP and more general
+    network settings on this system  
+    """
+
     BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
 
     def compose(self) -> ComposeResult:
@@ -282,7 +322,15 @@ The following Wi-Fi AP credentials can be found on your system:
 
 
 
+
 class WiFiChipInfo(Screen):
+    """
+    Display Wi-Fi hardware and system information
+
+    Show any collected information about the current system,
+    and any Wi-Fi capable devices present on it  
+    """
+
     BINDINGS = [("m", "app.pop_screen", "Back to Menu")]
 
     def compose(self) -> ComposeResult:
@@ -315,7 +363,7 @@ class WiFiChipInfo(Screen):
 
                 kword_filtered += value + '\n'
 
-
+        # Display the warning about limited clients on some Broadcom and Intel chips
         chip_compat_warning = ''
 
         if config.WIFI_CHIP == 'Broadcom':
@@ -343,8 +391,13 @@ class WiFiChipInfo(Screen):
 
 
 
+
 class QuitScreen(Screen):
-    """Screen with a dialog to quit."""
+    """
+    Screen with a dialog to quit
+
+    Used to block the app if IoTempower is not activated
+    """
 
     def compose(self) -> ComposeResult:
         yield Grid(

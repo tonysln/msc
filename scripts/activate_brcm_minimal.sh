@@ -4,10 +4,10 @@ minimal_firmware_path="/lib/firmware/cypress/cyfmac43455-sdio-minimal.bin"
 default_firmware_path="/lib/firmware/brcm/brcmfmac43455-sdio.bin"
 
 
-if [[ ! -e minimal_firmware_path ]]; then
-    echo "The minimal firmware file could not be found!"
-    exit
-fi
+# if [[ ! -e minimal_firmware_path ]]; then
+#     echo "The minimal firmware file could not be found!"
+#     exit
+# fi
 
 # Check if we have the right firmware in use right now already
 symlink_check=$(readlink -f "$default_firmware_path")

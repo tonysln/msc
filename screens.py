@@ -4,7 +4,7 @@
 # Textual
 from textual.app import ComposeResult
 from textual.screen import Screen
-from textual.containers import Grid
+from textual.containers import Grid, VerticalScroll
 from textual.widgets import Button, Header, Footer, Static, Input, RadioButton, RadioSet, Log, Markdown, Label
 
 # Python libraries

@@ -52,8 +52,28 @@ class ConnectedClients(Screen):
         return out
 
 
+    async def run_get_ips(dev):
+        out,err = run_cmd_async('get_ips')
+        lines = out.split('\n')
+
+        macs = await self.run_arp_scan(dev)
+        out = {}
+        for line in lines[1:]:
+            if not line: 
+                continue
+            line = line.split(': ')
+            ip = line[1]
+            name = line[0]
+            if ip in macs.keys():
+                out[name] = [ip, macs[ip]]
+            else:
+                print('IP mismatch:', ip)
+
+        return out
+
+
     async def check_connected_clients(self) -> None:
-        out = await self.run_arp_scan(config.WDEVICE)
+        out = await self.run_get_ips(config.WDEVICE)
         update_static(self, 'scanres1', f"""
             Scan result: {out}
 
@@ -287,7 +307,7 @@ class WiFiChipInfo(Screen):
         chip_compat_warning = ''
 
         if config.WIFI_CHIP == 'Broadcom':
-            chip_compat_warning = '## Notice\n\nIt appears that you have a Broadcom Wi-Fi chip with a potential limit of only **8** active clients, which means that any clients you attempt to connect after the 8th one will silently fail! A minimal firmare version is available, which might increase the client limit to **20**. The minimal firmware is activated automatically when creating an AP using this app.'
+            chip_compat_warning = '## Notice\n\nIt appears that you have a Broadcom Wi-Fi chip with a potential limit of only **8** active clients, which means that any clients you attempt to connect after the 8th one will silently fail!\n\nA minimal firmare version is available, which might increase the client limit to **20**. The minimal firmware is activated automatically when creating an AP using this app.'
         elif config.WIFI_CHIP == 'Intel':
             chip_compat_warning = '## Notice\n\nIt appears that you have an Intel Wi-Fi chip on your system, some of which have a known upper client limit of **11** devices, which means that no more than 11 clients can be connected to your computer at the same time! Unfortunately, there is no simple workaround to this issue, so just keep this in mind.\n\nUsing an external OpenWRT-based Wi-Fi router is recommended. '
 

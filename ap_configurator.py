@@ -142,6 +142,12 @@ your Access Point and network settings.
 
         update_static(self, 'detected-chip', result)
 
+        # Also detect and set name of output device
+        out,err = await run_cmd_async("bash ./scripts/detect_dev_name.sh")
+        if out:
+            config.WDEVICE = out
+            update_static(self, 'detected-chip', f'\n\tOutput wireless device: {out}', append=True)
+
 
     async def check_running_ap(self) -> None:
         # Check whether hostapd has been activated already

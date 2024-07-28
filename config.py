@@ -6,5 +6,5 @@ SYSTEM = ''
 SOFTAP = '--'
 AP_RUNNING = ''
 IOTEMPOWER = ''
-WDEVICE = 'wlan0'  # TODO get from iotempower vars
+WDEVICE = 'wlan0'
 BASEIP = '192.168.12.1'

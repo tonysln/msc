@@ -14,10 +14,6 @@ baseip=$3
 sudo systemctl enable wpa_supplicant.service
 sudo systemctl enable wpa_supplicant@wlan0.service
 
-sudo mv /etc/hostapd/hostapd.conf.backup /etc/hostapd/hostapd.conf
-sudo systemctl enable hostapd
-sudo systemctl start hostapd
-
 
 export IOTEMPOWER_AP_NAME=$nname
 export IOTEMPOWER_AP_PASSWORD=$npass

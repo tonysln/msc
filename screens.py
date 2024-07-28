@@ -127,8 +127,8 @@ class LocalConfiguration(Screen):
 
             yield Static('\tSoftware:')
             with RadioSet(id='ap_backend'):
-                yield RadioButton("NetworkManager", value=True, id='networkmanager')
-                yield RadioButton("hostapd", id="hostapd")
+                yield RadioButton("hostapd", id="hostapd", value=True)
+                yield RadioButton("NetworkManager", value=False, id='networkmanager')
 
             yield Static('\tThe name for the network:')
             yield Input(placeholder="Network Name", id='ssid')
@@ -312,8 +312,8 @@ The following Wi-Fi AP credentials can be found on your system:
 | ----------- | ----------- |
 | Network name (SSID) | {ssid} |
 | IP address          | {ip}  |
-| Output wireless device | {config.WDEVICE}  |
 | Default IP for new APs | {config.BASEIP} |
+| Output wireless device | {config.WDEVICE}  |
 | IoTempower activated | {config.IOTEMPOWER} |
 | Access point running | {ap_run} |
 | Other AP software present on system | {config.SOFTAP} |

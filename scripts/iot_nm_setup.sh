@@ -15,6 +15,14 @@ netmask=$4
 sudo systemctl disable wpa_supplicant.service
 sudo systemctl disable wpa_supplicant@wlan0.service
 
+cat << EOF  > /etc/polkit-1/rules.d/50-nmcli.rules 
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.user == "iot") {
+        return polkit.Result.YES;
+    }
+});
+EOF
+
 
 # Call the iotempower script from bin/,
 # iot env must be activated!

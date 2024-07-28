@@ -15,6 +15,9 @@ netmask=$4
 sudo systemctl disable wpa_supplicant.service
 sudo systemctl disable wpa_supplicant@wlan0.service
 
+sudo systemctl disable hostapd
+sudo mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.backup
+
 echo 'polkit.addRule(function(action, subject) {
     if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.user == "iot") {
         return polkit.Result.YES;

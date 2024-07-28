@@ -312,7 +312,8 @@ The following Wi-Fi AP credentials can be found on your system:
 | ----------- | ----------- |
 | Network name (SSID) | {ssid} |
 | IP address          | {ip}  |
-| Default IP for IoTempower | {config.BASEIP} |
+| Output wireless device | {config.WDEVICE}  |
+| Default IP for new APs | {config.BASEIP} |
 | IoTempower activated | {config.IOTEMPOWER} |
 | Access point running | {ap_run} |
 | Other AP software present on system | {config.SOFTAP} |

@@ -8,10 +8,12 @@
 nname=$1
 npass=$2
 baseip=$3
+wdevice=$4
 
 
 # Prepare for hostapd use after (presumably) NM
 sudo sed -i '/^\[ifupdown\]/{N;s/managed=true/managed=false/;}' "/etc/NetworkManager/NetworkManager.conf"
+sudo sed -i "/$wdevice/ s/^#//" "/etc/network/interfaces"
 
 export IOTEMPOWER_AP_NAME=$nname
 export IOTEMPOWER_AP_PASSWORD=$npass

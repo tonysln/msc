@@ -9,6 +9,7 @@ nname=$1
 npass=$2
 baseip=$3
 netmask=$4
+wdevice=$5
 
 
 # Prepare for NM use after (presumably) hostapd
@@ -20,6 +21,7 @@ echo 'polkit.addRule(function(action, subject) {
 });' | sudo tee /etc/polkit-1/rules.d/50-nmcli.rules > /dev/null
 
 sudo sed -i '/^\[ifupdown\]/{N;s/managed=false/managed=true/;}' "/etc/NetworkManager/NetworkManager.conf"
+sudo sed -i "/$wdevice/ s/^/#/" "/etc/network/interfaces"
 
 sudo service NetworkManager restart
 

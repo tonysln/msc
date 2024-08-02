@@ -23,6 +23,13 @@ sudo sed -i '/^\[ifupdown\]/{N;s/managed=false/managed=true/;}' "/etc/NetworkMan
 
 sudo service NetworkManager restart
 
+# IoTempower handling the security aspect of the password entry!
+cat << EOF > $IOTEMPOWER_ROOT/etc/wifi_credentials
+SSID=$nname
+Password=$npass
+GatewayIP=$baseip
+EOF
+
 
 # Call the iotempower script from bin/,
 # iot env must be activated!

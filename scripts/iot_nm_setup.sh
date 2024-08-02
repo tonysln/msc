@@ -12,18 +12,16 @@ netmask=$4
 
 
 # Prepare for NM use after (presumably) hostapd
-sudo systemctl disable wpa_supplicant.service
-sudo systemctl disable wpa_supplicant@wlan0.service
-
-sudo pkill wpa_supplicant 
-sudo pkill dhcpcd
-sudo systemctl restart NetworkManager
 
 echo 'polkit.addRule(function(action, subject) {
     if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.user == "iot") {
         return polkit.Result.YES;
     }
 });' | sudo tee /etc/polkit-1/rules.d/50-nmcli.rules > /dev/null
+
+sed -i '/^\[ifupdown\]/{N;s/managed=false/managed=true/;}' "/etc/NetworkManager/NetworkManager.conf"
+
+sudo service NetworkManager restart
 
 
 # Call the iotempower script from bin/,

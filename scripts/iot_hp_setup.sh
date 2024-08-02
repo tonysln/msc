@@ -11,9 +11,7 @@ baseip=$3
 
 
 # Prepare for hostapd use after (presumably) NM
-sudo systemctl enable wpa_supplicant.service
-sudo systemctl enable wpa_supplicant@wlan0.service
-
+sed -i '/^\[ifupdown\]/{N;s/managed=true/managed=false/;}' "/etc/NetworkManager/NetworkManager.conf"
 
 export IOTEMPOWER_AP_NAME=$nname
 export IOTEMPOWER_AP_PASSWORD=$npass

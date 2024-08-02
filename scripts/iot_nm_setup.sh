@@ -19,7 +19,7 @@ echo 'polkit.addRule(function(action, subject) {
     }
 });' | sudo tee /etc/polkit-1/rules.d/50-nmcli.rules > /dev/null
 
-sed -i '/^\[ifupdown\]/{N;s/managed=false/managed=true/;}' "/etc/NetworkManager/NetworkManager.conf"
+sudo sed -i '/^\[ifupdown\]/{N;s/managed=false/managed=true/;}' "/etc/NetworkManager/NetworkManager.conf"
 
 sudo service NetworkManager restart
 

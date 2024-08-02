@@ -11,7 +11,7 @@ baseip=$3
 
 
 # Prepare for hostapd use after (presumably) NM
-sed -i '/^\[ifupdown\]/{N;s/managed=true/managed=false/;}' "/etc/NetworkManager/NetworkManager.conf"
+sudo sed -i '/^\[ifupdown\]/{N;s/managed=true/managed=false/;}' "/etc/NetworkManager/NetworkManager.conf"
 
 export IOTEMPOWER_AP_NAME=$nname
 export IOTEMPOWER_AP_PASSWORD=$npass

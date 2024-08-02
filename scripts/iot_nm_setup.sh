@@ -21,7 +21,9 @@ echo 'polkit.addRule(function(action, subject) {
 });' | sudo tee /etc/polkit-1/rules.d/50-nmcli.rules > /dev/null
 
 sudo sed -i '/^\[ifupdown\]/{N;s/managed=false/managed=true/;}' "/etc/NetworkManager/NetworkManager.conf"
-sudo sed -i "/$wdevice/ s/^/#/" "/etc/network/interfaces"
+# Ensure that line does not start with '#', else add it if device name present
+sudo sed -i "/^\([^#]*$wdevice\)/ s/^/#/" "/etc/network/interfaces"
+
 
 sudo ifdown $wdevice && sudo ifup $wdevice
 sudo service NetworkManager restart

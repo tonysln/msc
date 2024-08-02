@@ -13,7 +13,8 @@ wdevice=$4
 
 # Prepare for hostapd use after (presumably) NM
 sudo sed -i '/^\[ifupdown\]/{N;s/managed=true/managed=false/;}' "/etc/NetworkManager/NetworkManager.conf"
-sudo sed -i "/$wdevice/ s/^#//" "/etc/network/interfaces"
+# Remove a single '#' from line start if device name present 
+sudo sed -i "/^\(#.*\)\($wdevice\)/ s/^#//" "/etc/network/interfaces"
 
 sudo ifdown $wdevice && sudo ifup $wdevice
 sudo service NetworkManager restart

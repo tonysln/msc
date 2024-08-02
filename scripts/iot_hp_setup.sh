@@ -20,6 +20,14 @@ export IOTEMPOWER_AP_PASSWORD=$npass
 export IOTEMPOWER_AP_IP=$baseip
 export IOTEMPOWER_AP_ADDID="no"
 
+# Save to IoTempower config file as well
+cat << EOF > $IOTEMPOWER_ROOT/etc/wifi_credentials
+SSID=$nname
+Password=$npass
+GatewayIP=$baseip
+EOF
+
+
 # Call the iotempower script from bin/,
 # iot env must be activated!
 echo $(accesspoint)

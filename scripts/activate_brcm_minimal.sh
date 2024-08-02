@@ -47,7 +47,13 @@ sudo update-alternatives --quiet --remove-all cyfmac43455-sdio.bin
 
 sudo ln -sf "$minimal_firmware_path" "$default_firmware_path"
 
+
+echo "Reloading the firmware..."
+sudo rmmod brcmfmac
+sudo modprobe brcmfmac
+
+
 # Finally, need a reboot to finalize things
 echo "Done!"
-echo "A reboot of your device is required to active the new minimal firmware version."
-echo "Please make sure to do so before using the Access Point."
+#echo "A reboot of your device is required to active the new minimal firmware version."
+#echo "Please make sure to do so before using the Access Point."

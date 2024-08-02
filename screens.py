@@ -27,7 +27,7 @@ class ConnectedClients(Screen):
             yield Markdown("""
 # Connected Clients
 
-This tool will detect all clients who are connected to the active AP and are discoverable over MQTT.
+This tool will detect all clients connected to an active AP and discoverable over MQTT.
                 """)
             yield Markdown(f"""
                 """, id="scanres")
@@ -381,7 +381,7 @@ class WiFiChipInfo(Screen):
 
 | Setting      | Value |
 | ----------- | ----------- |
-| Chip manufaturer | {config.WIFI_CHIP} |
+| Chip manufacturer | {config.WIFI_CHIP} |
 {kword_filtered}| System info | {config.SYSTEM} |
 
 

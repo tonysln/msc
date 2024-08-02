@@ -185,4 +185,4 @@ your Access Point and network settings.
 
 if __name__ == "__main__":
     app = APConfigurator()  
-    app.run(inline=False)
+    app.run()

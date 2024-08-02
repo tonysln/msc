@@ -23,7 +23,9 @@ echo 'polkit.addRule(function(action, subject) {
 sudo sed -i '/^\[ifupdown\]/{N;s/managed=false/managed=true/;}' "/etc/NetworkManager/NetworkManager.conf"
 sudo sed -i "/$wdevice/ s/^/#/" "/etc/network/interfaces"
 
+sudo ifdown $wdevice && sudo ifup $wdevice
 sudo service NetworkManager restart
+
 
 # IoTempower handling the security aspect of the password entry!
 cat << EOF > $IOTEMPOWER_ROOT/etc/wifi_credentials

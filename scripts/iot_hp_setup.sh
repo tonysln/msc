@@ -15,6 +15,10 @@ wdevice=$4
 sudo sed -i '/^\[ifupdown\]/{N;s/managed=true/managed=false/;}' "/etc/NetworkManager/NetworkManager.conf"
 sudo sed -i "/$wdevice/ s/^#//" "/etc/network/interfaces"
 
+sudo ifdown $wdevice && sudo ifup $wdevice
+sudo service NetworkManager restart
+
+
 export IOTEMPOWER_AP_NAME=$nname
 export IOTEMPOWER_AP_PASSWORD=$npass
 export IOTEMPOWER_AP_IP=$baseip

@@ -222,13 +222,15 @@ class OpenWRTConfiguration(Screen):
 Make sure your router has the following requirements met:
 
 - OpenWRT version 21 and newer supported
-- At least 64MB of memory available
-- SSH available
+- At least 16MB of memory available
+- An SSH connection can be made to the router
 
 Before starting, please do the following steps:
 
-- Connect the router to internet
-- Connect this device to the router over ethernet
+- Connect the router to Internet
+- Connect this device to the router over Ethernet
+
+Then, follow the instructions as they appear in the screen below.
             """)
 
             yield Static('\tThe name for the network:')

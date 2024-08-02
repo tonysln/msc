@@ -150,6 +150,15 @@ your Access Point and network settings.
 
 
     async def check_running_ap(self) -> None:
+        # First, check if any saved credentials already exist
+        out1,err1 = await run_cmd_async("bash ./scripts/read_wifi_creds.sh")
+        creds = out1.strip()
+        if out1 and len(creds) > 2 and ',' in creds:
+            cl = creds.split(',')
+            config.AP_SSID = cl[0].strip()
+            config.AP_IP = cl[2].strip()
+
+
         # Check whether hostapd has been activated already
         out,err = await run_cmd_async("ps -a | grep 'hostapd\\|create_ap'")
 
@@ -157,8 +166,8 @@ your Access Point and network settings.
             config.AP_RUNNING = 'hostapd'
         else:
             # Check NM service status separately
-            out,err = await run_cmd_async("nmcli con show --active | wc -l")
-            if not err and out and int(out.strip()) > 2:
+            out,err = await run_cmd_async("nmcli con show --activel")
+            if not err and out and config.AP_SSID and config.AP_SSID in out:
                 config.AP_RUNNING = 'NetworkManager'
 
         if config.AP_RUNNING:

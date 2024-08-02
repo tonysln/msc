@@ -18,7 +18,8 @@ export IOTEMPOWER_AP_PASSWORD=$npass
 export IOTEMPOWER_AP_IP=$baseip
 export IOTEMPOWER_AP_ADDID="no"
 
-# Save to IoTempower config file as well
+# Save to IoTempower config file as well,
+# granted the file is protected well
 cat << EOF > $IOTEMPOWER_ROOT/etc/wifi_credentials
 SSID=$nname
 Password=$npass

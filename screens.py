@@ -291,15 +291,13 @@ class APSettings(Screen):
 
 
     async def read_credentials(self) -> None:
-        out,err = await run_cmd_async("bash ./scripts/read_wifi_creds.sh")
-        creds = out.strip()
-
         ssid = '--'
+        if config.AP_SSID:
+            ssid = config.AP_SSID
+
         ip = '--'
-        if len(creds) > 2 and ',' in creds:
-            cl = creds.split(',')
-            ssid = cl[0].strip()
-            ip = cl[2].strip()
+        if config.AP_IP:
+            ip = config.AP_IP
 
         ap_run = 'False'
         if config.AP_RUNNING:

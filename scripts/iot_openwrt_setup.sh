@@ -10,6 +10,7 @@ npass=$2
 baseip=$3
 
 
+# IoTempower handling the security aspect of the password entry!
 cat << EOF > $IOTEMPOWER_ROOT/etc/wifi_credentials
 SSID=$nname
 Password=$npass

@@ -35,7 +35,7 @@ class APConfigurator(App):
 
     CSS_PATH = "style.tcss"
     BINDINGS = [("q", "quit", "Quit")]
-    dark = False
+    #dark = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -126,6 +126,7 @@ your Access Point and network settings.
             self.push_screen('wifichipinfo')
         elif option_id == "dap":
             # TODO run nmcli connection $name delete and ask for a restart ?
+            # TODO kill hostapd process if hostapd
             pass
         elif option_id == "vq":
             self.action_quit()

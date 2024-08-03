@@ -417,3 +417,21 @@ class QuitScreen(Screen):
             self.app.exit()
         else:
             self.app.pop_screen()
+
+
+class InfoScreen(Screen):
+    """
+    Information dialog screen
+
+    Used to inform the user of some information
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Label("Please restart this app to continue!", id="question"),
+            Button("OK", variant="primary", id="cancel"),
+            id="dialog",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.app.pop_screen()

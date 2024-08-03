@@ -21,7 +21,7 @@ import sys
 # Modules
 import config
 from utils import update_static, validate_config_params, run_cmd_async
-from screens import ConnectedClients, LocalConfiguration, OpenWRTConfiguration, APSettings, WiFiChipInfo, QuitScreen
+from screens import ConnectedClients, LocalConfiguration, OpenWRTConfiguration, APSettings, WiFiChipInfo, QuitScreen, InfoScreen
 
 
 
@@ -53,7 +53,6 @@ your Access Point and network settings.
             yield OptionList(
                 Option("Configure Access Point", id="cap"),
                 Option("Configure OpenWRT Router", id="cor"),
-                Option("Turn Off Active AP", id="dap"),
                 Separator(),
                 Option("View Connected Clients", id="vcc"),
                 Option("View AP Settings", id="vas"),
@@ -71,8 +70,6 @@ your Access Point and network settings.
         self.install_screen(OpenWRTConfiguration(), name="wrtconf")
         self.install_screen(APSettings(), name="apsettings")
         self.install_screen(WiFiChipInfo(), name="wifichipinfo")
-
-        self.query_one('#menu').get_option('dap').display = False
 
         asyncio.create_task(self.update_detected_chip())
         asyncio.create_task(self.check_iotempower())
@@ -128,8 +125,8 @@ your Access Point and network settings.
         elif option_id == "vci":
             self.push_screen('wifichipinfo')
         elif option_id == "dap":
-            # TODO run nmcli connection $name delete and ask for a restart ?
-            # TODO kill hostapd process if hostapd
+            out,err = await run_cmd_async(f"nmcli connection delete {config.AP_RUNNING}")
+            self.push_screen(InfoScreen())
             pass
         elif option_id == "vq":
             self.action_quit()
@@ -181,6 +178,7 @@ your Access Point and network settings.
 
         if config.AP_RUNNING:
             update_static(self, 'softap-status', '\t[+] An active AP has been detected: ' + config.AP_RUNNING)
+            self.query_one('#menu').add_option(Option("Turn Off Active AP", id="dap"))
 
 
     async def check_iotempower(self) -> None:

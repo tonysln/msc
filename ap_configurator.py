@@ -125,7 +125,7 @@ your Access Point and network settings.
         elif option_id == "vci":
             self.push_screen('wifichipinfo')
         elif option_id == "dap":
-            out,err = await run_cmd_async(f"nmcli connection delete {config.AP_RUNNING}")
+            out,err = await run_cmd_async(f"nmcli connection delete {config.AP_SSID}")
             self.push_screen(InfoScreen())
             pass
         elif option_id == "vq":

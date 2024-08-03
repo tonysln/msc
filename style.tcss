@@ -15,7 +15,7 @@ Input, RadioSet, Log, Markdown {
 }
 
 
-QuitScreen {
+QuitScreen, InfoScreen {
     align: center middle;
 }
 
@@ -37,6 +37,6 @@ QuitScreen {
     content-align: center middle;
 }
 
-QuitScreen Button {
+QuitScreen Button, InfoScreen Button {
     width: 100%;
 }

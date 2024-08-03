@@ -125,11 +125,7 @@ your Access Point and network settings.
         elif option_id == "vci":
             self.push_screen('wifichipinfo')
         elif option_id == "dap":
-
-            out,err = await run_cmd_async(f"""nmcli connection delete {config.AP_SSID} ;
-                sudo pkill create_ap ;
-                ps -ax | grep "{config.AP_SSID}" | grep -v grep | awk '{print $1}' | xargs -r sudo kill -9""")
-
+            out,err = await run_cmd_async(f'bash ./scripts/turn_off_ap.sh {config.AP_SSID}', bg=True)
             self.push_screen(RestartScreen())
             pass
         elif option_id == "vq":

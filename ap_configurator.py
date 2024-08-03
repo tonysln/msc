@@ -35,6 +35,7 @@ class APConfigurator(App):
 
     CSS_PATH = "style.tcss"
     BINDINGS = [("q", "quit", "Quit")]
+    dark = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -52,6 +53,7 @@ your Access Point and network settings.
             yield OptionList(
                 Option("Configure Access Point", id="cap"),
                 Option("Configure OpenWRT Router", id="cor"),
+                Option("Turn Off Active AP", id="dap"),
                 Separator(),
                 Option("View Connected Clients", id="vcc"),
                 Option("View AP Settings", id="vas"),
@@ -122,6 +124,9 @@ your Access Point and network settings.
             self.push_screen('apsettings')
         elif option_id == "vci":
             self.push_screen('wifichipinfo')
+        elif option_id == "dap":
+            # TODO run nmcli connection $name delete and ask for a restart ?
+            pass
         elif option_id == "vq":
             self.action_quit()
 

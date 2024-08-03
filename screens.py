@@ -187,8 +187,9 @@ class LocalConfiguration(Screen):
             out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {config.BASEIP} {config.WDEVICE}")
         elif backend == 'networkmanager':
             log.write_line('Running NetworkManager setup...')
-            log.write_line('NB! If you previously used hostapd on this system, there might be some steps you need to manually complete.\nContact your instructor or administrator in case of failure.')
             out,err = await run_cmd_async(f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {config.BASEIP} '/24' {config.WDEVICE}")
+            if err:
+                log.write_line('NB! Please restart your device to activate the AP!')
 
         log.write_line(out)
         log.write_line(err)

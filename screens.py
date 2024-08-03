@@ -185,7 +185,7 @@ class LocalConfiguration(Screen):
         if backend == 'hostapd':
             log.write_line('Running hostapd setup...')
             log.write_line('Please wait up to 30 seconds for the AP to start')
-            out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {config.BASEIP} {config.WDEVICE}", bg=True)
+            await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {config.BASEIP} {config.WDEVICE}", bg=True)
         
         elif backend == 'networkmanager':
             log.write_line('Running NetworkManager setup...')

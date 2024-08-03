@@ -71,6 +71,9 @@ your Access Point and network settings.
         self.install_screen(OpenWRTConfiguration(), name="wrtconf")
         self.install_screen(APSettings(), name="apsettings")
         self.install_screen(WiFiChipInfo(), name="wifichipinfo")
+
+        self.query_one('#menu').get_option('dap').display = False
+
         asyncio.create_task(self.update_detected_chip())
         asyncio.create_task(self.check_iotempower())
         asyncio.create_task(self.check_running_ap())

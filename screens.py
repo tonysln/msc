@@ -185,11 +185,12 @@ class LocalConfiguration(Screen):
         if backend == 'hostapd':
             log.write_line('Running hostapd setup...')
             out,err = await run_cmd_async(f"bash ./scripts/iot_hp_setup.sh {nname} {npass} {config.BASEIP} {config.WDEVICE}")
+            log.write_line('Please wait 10 seconds for the AP to start')
         elif backend == 'networkmanager':
             log.write_line('Running NetworkManager setup...')
             out,err = await run_cmd_async(f"bash ./scripts/iot_nm_setup.sh {nname} {npass} {config.BASEIP} '/24' {config.WDEVICE}")
             if err:
-                log.write_line('NB! Please restart your device to activate the AP!')
+                log.write_line('\nNB! Please restart your device to activate the AP!')
 
         log.write_line(out)
         log.write_line(err)
@@ -400,7 +401,6 @@ class WiFiChipInfo(Screen):
 class QuitScreen(Screen):
     """
     Screen with a dialog to quit
-
     Used to block the app if IoTempower is not activated
     """
 
@@ -415,23 +415,24 @@ class QuitScreen(Screen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "quit":
             self.app.exit()
-        else:
-            self.app.pop_screen()
+        self.app.pop_screen()
 
 
-class InfoScreen(Screen):
+class RestartScreen(Screen):
     """
-    Information dialog screen
-
-    Used to inform the user of some information
+    Information dialog screen with request to restart app
+    Used after disabling the AP
     """
 
     def compose(self) -> ComposeResult:
         yield Grid(
-            Label("Please restart this app to continue!", id="question"),
-            Button("OK", variant="primary", id="cancel"),
+            Label("AP has been turned off. Please restart this app to continue!", id="question"),
+            Button("Quit", variant="primary", id="quit"),
+            Button("Cancel", id="cancel"),
             id="dialog",
         )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "quit":
+            self.app.exit()
         self.app.pop_screen()

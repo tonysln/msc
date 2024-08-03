@@ -21,7 +21,7 @@ import sys
 # Modules
 import config
 from utils import update_static, validate_config_params, run_cmd_async
-from screens import ConnectedClients, LocalConfiguration, OpenWRTConfiguration, APSettings, WiFiChipInfo, QuitScreen, InfoScreen
+from screens import ConnectedClients, LocalConfiguration, OpenWRTConfiguration, APSettings, WiFiChipInfo, QuitScreen, RestartScreen
 
 
 
@@ -125,8 +125,8 @@ your Access Point and network settings.
         elif option_id == "vci":
             self.push_screen('wifichipinfo')
         elif option_id == "dap":
-            out,err = await run_cmd_async(f"nmcli connection delete {config.AP_SSID}")
-            self.push_screen(InfoScreen())
+            out,err = await run_cmd_async(f"nmcli connection delete {config.AP_SSID} ; sudo pkill create_ap")
+            self.push_screen(RestartScreen())
             pass
         elif option_id == "vq":
             self.action_quit()

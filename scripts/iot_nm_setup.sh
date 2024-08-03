@@ -24,8 +24,6 @@ sudo sed -i '/^\[ifupdown\]/{N;s/managed=false/managed=true/;}' "/etc/NetworkMan
 # Ensure that line does not start with '#', else add it if device name present
 sudo sed -i "/^\([^#]*$wdevice\)/ s/^/#/" "/etc/network/interfaces"
 
-
-sudo ifdown $wdevice && sudo ifup $wdevice
 sudo service NetworkManager restart
 
 

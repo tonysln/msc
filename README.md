@@ -22,5 +22,15 @@ APConfigurator is a Python-based application designed to help configure access p
 - style.tcss: CSS styles for the Textual app.
 - scripts/: Directory containing bash scripts used for configuration and detection.
 
-...
+## Requirements
 
+- Python 3, bash
+- Python libraries: Textual, paho-mqtt
+- Libraries: arp-scan, lshw, lspci, lsmod, hostapd, network-manager
+- IoTempower installed and activated
+
+## Usage
+
+1. Install the required libraries and packages.
+2. Install and activate IoTempower.
+3. Run the `run.sh` script and enter your sudo password if prompted.

@@ -34,3 +34,12 @@ APConfigurator is a Python-based application designed to help configure access p
 1. Install the required libraries and packages.
 2. Install and activate IoTempower.
 3. Run the `run.sh` script and enter your sudo password if prompted.
+
+
+# Other scripts
+
+This repository also contains scripts for monitoring live gateway connections:
+
+- `mqtt_alive.py` can be used to count the number of live clients transmitting over MQTT.
+- `scripts/ap_neighs.py` uses arp-scan to search for currently active connections.
+- `scripts/neigh.py` and `scripts/neigh_iw.py` use `ip`and `iw` respectively to display the connected devices.
